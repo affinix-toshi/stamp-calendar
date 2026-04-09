@@ -43,6 +43,21 @@
             font-family: inherit;
         }
         .share-btn:active { background: rgba(255,255,255,0.4); }
+        .settings-btn {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.25);
+            border: 1px solid rgba(255,255,255,0.5);
+            color: white;
+            border-radius: 16px;
+            padding: 5px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .settings-btn:active { background: rgba(255,255,255,0.4); }
 
         /* 参加者バッジ */
         .members-bar {
@@ -166,12 +181,8 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .stamp-entry.mine .stamp-emoji-display {
-            cursor: pointer;
-        }
-        .stamp-entry.mine .stamp-emoji-display:active {
-            transform: scale(1.4);
-        }
+        .stamp-entry.mine .stamp-emoji-display { cursor: pointer; }
+        .stamp-entry.mine .stamp-emoji-display:active { transform: scale(1.4); }
 
         /* スタンプパレット（固定下部） */
         .stamp-palette {
@@ -183,7 +194,7 @@
             max-width: 500px;
             background: white;
             border-top: 2px solid #6c5ce7;
-            padding: 10px 8px 12px;
+            padding: 8px 8px 10px;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
             z-index: 50;
         }
@@ -192,7 +203,7 @@
             font-size: 11px;
             color: #6c5ce7;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             height: 14px;
         }
         .stamps-row {
@@ -205,13 +216,13 @@
             flex-direction: column;
             align-items: center;
             gap: 2px;
-            padding: 6px 4px;
+            padding: 5px 2px;
             border: 2px solid transparent;
             border-radius: 12px;
             cursor: pointer;
             background: none;
             font-family: inherit;
-            min-width: 44px;
+            min-width: 40px;
             transition: all 0.12s;
         }
         .stamp-btn:active { transform: scale(0.88); }
@@ -219,7 +230,7 @@
             border-color: #6c5ce7;
             background: #f0ecff;
         }
-        .stamp-btn-emoji { font-size: 26px; line-height: 1; }
+        .stamp-btn-emoji { font-size: 22px; line-height: 1; }
         .stamp-btn-label { font-size: 9px; color: #777; }
 
         /* 下部スペーサー */
@@ -244,6 +255,8 @@
             max-width: 340px;
             text-align: center;
             box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-icon { font-size: 48px; margin-bottom: 8px; }
         .modal h2 { font-size: 20px; color: #333; margin-bottom: 6px; }
@@ -262,6 +275,7 @@
         }
         .modal-input:focus { outline: none; border-color: #6c5ce7; }
         .room-input { letter-spacing: 3px; text-transform: uppercase; }
+        .code-input { font-size: 11px; letter-spacing: 0; word-break: break-all; }
 
         .btn {
             width: 100%;
@@ -276,7 +290,7 @@
             transition: opacity 0.15s;
         }
         .btn:active { opacity: 0.75; }
-        .btn-primary { background: #6c5ce7; color: white; }
+        .btn-primary   { background: #6c5ce7; color: white; }
         .btn-secondary { background: #f0f0f5; color: #555; }
 
         .divider {
@@ -327,6 +341,80 @@
         .btn-delete { background: #ff7675; color: white; }
         .btn-cancel { background: #f0f0f5; color: #555; }
 
+        /* 設定シート */
+        .settings-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 300;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        .settings-sheet {
+            background: white;
+            border-radius: 20px 20px 0 0;
+            padding: 24px 20px 36px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .settings-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .settings-label {
+            font-size: 12px;
+            color: #888;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .code-display {
+            background: #f8f8fc;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 11px;
+            word-break: break-all;
+            color: #444;
+            margin-bottom: 8px;
+            font-family: monospace;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .settings-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .settings-row input {
+            flex: 1;
+            padding: 11px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            text-align: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .settings-row input:focus { outline: none; border-color: #6c5ce7; }
+        .settings-row .s-btn {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            background: #6c5ce7;
+            color: white;
+        }
+        .settings-divider { height: 1px; background: #eee; margin: 16px 0; }
+
         /* トースト通知 */
         .toast {
             position: fixed;
@@ -362,6 +450,7 @@
 <body>
 
 <div class="header">
+    <button class="settings-btn" onclick="openSettings()">設定 ⚙️</button>
     <h1>📅 スタンプカレンダー</h1>
     <div class="header-sub" id="roomDisplay">読み込み中...</div>
     <button class="share-btn" onclick="shareRoom()">共有 🔗</button>
@@ -417,6 +506,11 @@
         <div class="divider">招待されている場合</div>
         <input class="modal-input room-input" id="roomInput" type="text" placeholder="ルームコード（例：ABC12）" maxlength="8">
         <button class="btn btn-secondary" onclick="joinRoom()">参加する →</button>
+
+        <div class="divider">別のブラウザ・端末から引き継ぐ</div>
+        <input class="modal-input code-input" id="personalCodeInput" type="text" placeholder="個人コードを貼り付け（設定からコピー）" autocomplete="off">
+        <input class="modal-input room-input" id="restoreRoomInput" type="text" placeholder="ルームコード（例：ABC12）" maxlength="8">
+        <button class="btn btn-secondary" onclick="restoreFromCode()">このコードで復元 →</button>
     </div>
 </div>
 
@@ -431,14 +525,36 @@
     </div>
 </div>
 
+<!-- 設定シート -->
+<div class="settings-overlay" id="settingsOverlay" style="display:none" onclick="closeSettingsIfBg(event)">
+    <div class="settings-sheet">
+        <div class="settings-title">⚙️ 設定</div>
+
+        <div class="settings-label">🔑 個人コード（別のブラウザ・端末で使う場合）</div>
+        <div class="code-display" id="personalCodeDisplay">—</div>
+        <button class="btn btn-secondary" style="margin-bottom:0;" onclick="copyPersonalCode()">コードをコピー 📋</button>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-label">🚪 ルームを変更</div>
+        <div class="settings-row">
+            <input type="text" id="changeRoomInput" placeholder="ルームコード">
+            <button class="s-btn" onclick="changeRoomTo()">移動</button>
+        </div>
+        <button class="btn btn-secondary" style="margin-bottom:0;" onclick="createNewRoom()">✨ 新しいルームを作る</button>
+
+        <div class="settings-divider"></div>
+        <button class="btn btn-secondary" style="margin-bottom:0;background:#fff0f0;color:#e44;" onclick="logoutConfirm()">👤 ユーザーをリセット</button>
+    </div>
+</div>
+
 <script type="module">
 import { initializeApp }         from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getDatabase, ref, set, push, remove, onValue, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 // ============================================================
-//  ⚠️  Firebaseの設定をここに貼り付けてください
-//  （Firebaseセットアップ手順.md を参照）
+//  Firebase設定
 // ============================================================
 const firebaseConfig = {
   apiKey: "AIzaSyAS2og9fS_irKSFR0LmPtELjOlecE0Kn6w",
@@ -451,24 +567,28 @@ const firebaseConfig = {
 };
 // ============================================================
 
-// スタンプ一覧（自由に追加・変更できます）
+// スタンプ一覧
 const STAMPS = [
     { emoji: '🏠', label: '在宅'     },
-    { emoji: '✈️', label: '旅行'     },
-    { emoji: '🎉', label: 'イベント'  },
-    { emoji: '🍷', label: 'ワイン'   },
     { emoji: '😴', label: '休み'     },
-    { emoji: '💼', label: '仕事'     },
-    { emoji: '🌟', label: '特別'     },
     { emoji: '❌', label: '不在'     },
+    { emoji: '💼', label: '仕事朝'   },
+    { emoji: '☀️', label: '仕事昼'   },
+    { emoji: '🌙', label: '仕事夜'   },
+    { emoji: '🎹', label: 'ピアノ'   },
+    { emoji: '👶', label: '赤ちゃん' },
+    { emoji: '🍺', label: '飲み会'   },
+    { emoji: '🍷', label: 'ワイン'   },
 ];
 
 // ---- アプリ状態 ----
 let db, roomId, userName, userId;
 let currentYear, currentMonth;
-let selectedStamp = null;
-let calendarData  = {};   // { "YYYY-MM-DD": { stampId: {emoji,label,userId,userName} } }
-let pendingDelete = null; // { dateKey, stampId }
+let selectedStamps = new Set();
+let calendarData   = {};
+let pendingDelete  = null;
+let unsubStamps    = null;
+let unsubUsers     = null;
 
 // ---- Firebase 初期化 ----
 function initFirebase() {
@@ -492,26 +612,47 @@ function dateKey(y, m, d) {
     return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
 
+// ---- 個人コード（ブラウザをまたいだ同一ユーザー識別） ----
+function encodePersonalCode(name, uid) {
+    try { return btoa(uid + ':' + encodeURIComponent(name)); }
+    catch { return null; }
+}
+function decodePersonalCode(code) {
+    try {
+        const raw   = atob(code.trim().replace(/\s/g, ''));
+        const colon = raw.indexOf(':');
+        if (colon < 0) return null;
+        const uid  = raw.slice(0, colon);
+        const name = decodeURIComponent(raw.slice(colon + 1));
+        if (!uid || !name) return null;
+        return { uid, name };
+    } catch { return null; }
+}
+
 // ---- セットアップ ----
 function init() {
-    const today = new Date();
+    const today  = new Date();
     currentYear  = today.getFullYear();
     currentMonth = today.getMonth();
 
     renderStampPalette();
-    renderCalendar(); // まずローカル描画
+    renderCalendar();
 
-    // URL から room を取得
     const urlRoom = new URLSearchParams(location.search).get('room');
-    if (urlRoom) document.getElementById('roomInput').value = urlRoom.toUpperCase();
+    if (urlRoom) {
+        document.getElementById('roomInput').value        = urlRoom.toUpperCase();
+        document.getElementById('restoreRoomInput').value = urlRoom.toUpperCase();
+    }
 
-    // localStorage から復元
     const savedName   = localStorage.getItem('sc_name');
     const savedRoom   = localStorage.getItem('sc_room');
     const savedUserId = localStorage.getItem('sc_uid');
 
     if (savedName) document.getElementById('nameInput').value = savedName;
-    if (savedRoom && !urlRoom) document.getElementById('roomInput').value = savedRoom;
+    if (savedRoom && !urlRoom) {
+        document.getElementById('roomInput').value        = savedRoom;
+        document.getElementById('restoreRoomInput').value = savedRoom;
+    }
 
     if (savedName && (savedRoom || urlRoom)) {
         userName = savedName;
@@ -545,6 +686,21 @@ window.joinRoom = function () {
     startApp();
 };
 
+// 別ブラウザ・端末からの引き継ぎ
+window.restoreFromCode = function () {
+    const code = document.getElementById('personalCodeInput').value.trim();
+    const room = document.getElementById('restoreRoomInput').value.trim().toUpperCase();
+    if (!code) { showToast('個人コードを入力してください'); return; }
+    if (!room) { showToast('ルームコードも入力してください'); return; }
+    const decoded = decodePersonalCode(code);
+    if (!decoded) { showToast('コードが正しくありません'); return; }
+    userName = decoded.name;
+    userId   = decoded.uid;
+    roomId   = room;
+    save();
+    startApp();
+};
+
 function save() {
     localStorage.setItem('sc_name', userName);
     localStorage.setItem('sc_room', roomId);
@@ -557,34 +713,94 @@ function startApp() {
         return;
     }
     document.getElementById('setupModal').style.display = 'none';
-    document.getElementById('roomDisplay').textContent  = `ルーム: ${roomId}`;
+    updateRoomUI();
 
-    // URL 更新
-    const url = new URL(location.href);
-    url.searchParams.set('room', roomId);
-    history.replaceState({}, '', url);
+    const code = encodePersonalCode(userName, userId);
+    document.getElementById('personalCodeDisplay').textContent = code || '—';
 
-    // スタンプデータ購読
-    onValue(ref(db, `rooms/${roomId}/stamps`), snap => {
-        calendarData = snap.val() || {};
-        renderCalendar();
-    });
+    subscribeToRoom();
 
-    // 参加者一覧購読
-    onValue(ref(db, `rooms/${roomId}/users`), snap => {
-        renderMembers(snap.val() || {});
-    });
-
-    // 自分の存在を登録
-    set(ref(db, `rooms/${roomId}/users/${userId}`), {
-        name: userName,
-        ts: serverTimestamp()
-    });
-
-    // オフライン検知
     window.addEventListener('offline', () => document.getElementById('offlineBanner').style.display = 'block');
     window.addEventListener('online',  () => document.getElementById('offlineBanner').style.display = 'none');
 }
+
+function subscribeToRoom() {
+    if (unsubStamps) { unsubStamps(); unsubStamps = null; }
+    if (unsubUsers)  { unsubUsers();  unsubUsers  = null; }
+
+    unsubStamps = onValue(ref(db, `rooms/${roomId}/stamps`), snap => {
+        calendarData = snap.val() || {};
+        renderCalendar();
+    });
+    unsubUsers = onValue(ref(db, `rooms/${roomId}/users`), snap => {
+        renderMembers(snap.val() || {});
+    });
+
+    set(ref(db, `rooms/${roomId}/users/${userId}`), {
+        name: userName,
+        ts:   serverTimestamp()
+    });
+}
+
+function updateRoomUI() {
+    document.getElementById('roomDisplay').textContent = `ルーム: ${roomId}`;
+    const url = new URL(location.href);
+    url.searchParams.set('room', roomId);
+    history.replaceState({}, '', url);
+}
+
+// ---- 設定シート ----
+window.openSettings = function () {
+    document.getElementById('settingsOverlay').style.display = 'flex';
+};
+window.closeSettings = function () {
+    document.getElementById('settingsOverlay').style.display = 'none';
+};
+window.closeSettingsIfBg = function (e) {
+    if (e.target === document.getElementById('settingsOverlay')) closeSettings();
+};
+
+window.copyPersonalCode = function () {
+    const code = document.getElementById('personalCodeDisplay').textContent;
+    if (!code || code === '—') { showToast('まずルームに参加してください'); return; }
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(() => showToast('個人コードをコピーしました！'));
+    } else {
+        prompt('個人コードをコピーしてください:', code);
+    }
+};
+
+window.changeRoomTo = function () {
+    const newRoom = document.getElementById('changeRoomInput').value.trim().toUpperCase();
+    if (!newRoom) { showToast('ルームコードを入力してください'); return; }
+    roomId = newRoom;
+    calendarData = {};
+    save();
+    updateRoomUI();
+    subscribeToRoom();
+    closeSettings();
+    renderCalendar();
+    document.getElementById('changeRoomInput').value = '';
+    showToast(`ルーム ${roomId} に移動しました`);
+};
+
+window.createNewRoom = function () {
+    roomId = genRoomCode();
+    calendarData = {};
+    save();
+    updateRoomUI();
+    subscribeToRoom();
+    closeSettings();
+    renderCalendar();
+    showToast(`新しいルーム ${roomId} を作りました`);
+};
+
+window.logoutConfirm = function () {
+    if (confirm('ユーザー情報をリセットしますか？\n（次回は名前を入力し直す必要があります）')) {
+        localStorage.clear();
+        location.reload();
+    }
+};
 
 // ---- 参加者バッジ ----
 function renderMembers(users) {
@@ -610,18 +826,31 @@ function renderStampPalette() {
     });
 }
 
+// 複数選択：タップするたびにON/OFF切り替え
 window.selectStamp = function(idx) {
-    if (selectedStamp === idx) {
-        selectedStamp = null;
-        document.getElementById('modeHint').textContent = 'スタンプを選んで → 日付をタップ';
+    if (selectedStamps.has(idx)) {
+        selectedStamps.delete(idx);
     } else {
-        selectedStamp = idx;
-        document.getElementById('modeHint').textContent = `「${STAMPS[idx].label}」を選択中 → 日付をタップ！`;
+        selectedStamps.add(idx);
     }
     document.querySelectorAll('.stamp-btn').forEach((btn, i) => {
-        btn.classList.toggle('selected', i === selectedStamp);
+        btn.classList.toggle('selected', selectedStamps.has(i));
     });
+    updateModeHint();
 };
+
+function updateModeHint() {
+    const hint = document.getElementById('modeHint');
+    if (selectedStamps.size === 0) {
+        hint.textContent = 'スタンプを選んで → 日付をタップ';
+    } else if (selectedStamps.size === 1) {
+        const idx = [...selectedStamps][0];
+        hint.textContent = `「${STAMPS[idx].label}」を選択中 → 日付をタップ！`;
+    } else {
+        const emojis = [...selectedStamps].map(i => STAMPS[i].emoji).join(' ');
+        hint.textContent = `${emojis} を選択中 → 日付をタップ！`;
+    }
+}
 
 // ---- 月切替 ----
 window.changeMonth = function(delta) {
@@ -642,7 +871,6 @@ function renderCalendar() {
     const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
     const today    = new Date();
 
-    // 空白
     for (let i = 0; i < firstDay; i++) {
         const cell = document.createElement('div');
         cell.className = 'day-cell empty';
@@ -650,12 +878,12 @@ function renderCalendar() {
     }
 
     for (let d = 1; d <= lastDate; d++) {
-        const cell     = document.createElement('div');
-        const dow      = (firstDay + d - 1) % 7;
-        const key      = dateKey(currentYear, currentMonth, d);
-        const isToday  = (d === today.getDate() &&
-                          currentMonth === today.getMonth() &&
-                          currentYear  === today.getFullYear());
+        const cell    = document.createElement('div');
+        const dow     = (firstDay + d - 1) % 7;
+        const key     = dateKey(currentYear, currentMonth, d);
+        const isToday = (d === today.getDate() &&
+                         currentMonth === today.getMonth() &&
+                         currentYear  === today.getFullYear());
 
         let cls = 'day-cell';
         if (dow === 0) cls += ' sunday';
@@ -663,20 +891,18 @@ function renderCalendar() {
         if (isToday)   cls += ' today';
         cell.className = cls;
 
-        // 日付番号
         const num = document.createElement('div');
         num.className   = 'day-num';
         num.textContent = d;
         cell.appendChild(num);
 
-        // スタンプ一覧
         const stampsDiv = document.createElement('div');
         stampsDiv.className = 'stamps-in-day';
 
         const dayStamps = calendarData[key];
         if (dayStamps) {
             Object.entries(dayStamps).forEach(([sid, data]) => {
-                const isMe = data.userId === userId;
+                const isMe  = data.userId === userId;
                 const entry = document.createElement('div');
                 entry.className = `stamp-entry${isMe ? ' mine' : ''}`;
 
@@ -704,37 +930,37 @@ function renderCalendar() {
 
         cell.appendChild(stampsDiv);
 
-        // 日付セルタップ → スタンプ追加
         cell.addEventListener('click', () => {
-            if (selectedStamp === null) {
+            if (selectedStamps.size === 0) {
                 showToast('下のスタンプを選んでください ▼');
-                // 少し揺らす演出
-                document.querySelector('.stamp-palette').style.animation = 'none';
-                setTimeout(() => document.querySelector('.stamp-palette').style.animation = '', 100);
                 return;
             }
-            addStamp(key);
+            addStamps(key);
         });
 
         grid.appendChild(cell);
     }
 }
 
-// ---- スタンプ追加 ----
-async function addStamp(key) {
-    if (!db || selectedStamp === null) return;
-    const s = STAMPS[selectedStamp];
-    const newRef = push(ref(db, `rooms/${roomId}/stamps/${key}`));
-    await set(newRef, {
-        emoji:    s.emoji,
-        label:    s.label,
-        userId:   userId,
-        userName: userName,
-        ts:       Date.now()
-    });
+// ---- スタンプ追加（選択中の全スタンプをまとめて追加） ----
+async function addStamps(key) {
+    if (!db || selectedStamps.size === 0) return;
+    const addedEmojis = [];
+    for (const idx of selectedStamps) {
+        const s      = STAMPS[idx];
+        const newRef = push(ref(db, `rooms/${roomId}/stamps/${key}`));
+        await set(newRef, {
+            emoji:    s.emoji,
+            label:    s.label,
+            userId:   userId,
+            userName: userName,
+            ts:       Date.now()
+        });
+        addedEmojis.push(s.emoji);
+    }
     const month = key.slice(5, 7);
     const day   = key.slice(8, 10);
-    showToast(`${s.emoji} ${parseInt(month)}/${parseInt(day)} に追加しました`);
+    showToast(`${addedEmojis.join('')} ${parseInt(month)}/${parseInt(day)} に追加しました`);
 }
 
 // ---- スタンプ削除 ----
