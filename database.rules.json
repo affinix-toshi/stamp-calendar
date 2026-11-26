@@ -17,7 +17,9 @@
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",
           ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren()",
           "rooms": {
+            ".validate": "newData.hasChildren()",
             "$roomId": {
               ".validate": "newData.val() === true"
             }
@@ -54,7 +56,7 @@
           },
           "members": {
             "$uid": {
-              ".write": "auth != null && $uid === auth.uid && newData.exists() && ((data.exists() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('invite').val() === data.child('invite').val()) || (!data.exists() && (newData.parent().parent().child('meta/createdBy').val() === auth.uid || (newData.child('invite').isString() && newData.child('invite').val() === root.child('v2/rooms/' + $roomId + '/meta/inviteCode').val()))))",
+              ".write": "auth != null && $uid === auth.uid && newData.exists() && ((data.exists() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('invite').val() === data.child('invite').val()) || (!data.exists() && ((newData.parent().parent().child('meta/createdBy').val() === auth.uid && !newData.child('invite').exists()) || (newData.child('invite').isString() && newData.child('invite').val() === root.child('v2/rooms/' + $roomId + '/meta/inviteCode').val()))))",
               ".validate": "newData.hasChildren(['name', 'joinedAt'])",
               "name": {
                 ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
@@ -72,6 +74,7 @@
           },
           "stampTypes": {
             ".write": "auth != null && (root.child('v2/rooms/' + $roomId + '/members/' + auth.uid).exists() || (!root.child('v2/rooms/' + $roomId + '/meta').exists() && newData.parent().child('meta/createdBy').val() === auth.uid))",
+            ".validate": "newData.hasChildren()",
             "$typeId": {
               ".validate": "newData.hasChildren(['emoji', 'label', 'order'])",
               "emoji": {
@@ -153,6 +156,7 @@
                 ".validate": "newData.isString() && newData.val().matches(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)"
               },
               "skips": {
+                ".validate": "newData.hasChildren()",
                 "$date": {
                   ".validate": "$date.matches(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) && newData.val() === true"
                 }

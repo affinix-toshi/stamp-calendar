@@ -506,3 +506,57 @@ describe('v2/users/{uid}', () => {
     await assertFails(db(ALICE).ref('v2/users').once('value'));
   });
 });
+
+describe('まとめて上書き・すき間をふさぐ（Fix 2）', () => {
+  it('作成者のメンバー登録に invite を付けてルームを作ることはできない', async () => {
+    const u = createRoomUpdate(ALICE.uid);
+    (u[`v2/rooms/${ROOM}/members/${ALICE.uid}`] as Record<string, unknown>).invite = CODE_A;
+    await assertFails(db(ALICE).ref().update(u));
+  });
+
+  it('作成者でない人が空のルームに meta/name だけ書くことはできない', async () => {
+    await assertFails(db(BOB).ref('v2/rooms/empty/meta/name').set('のっとり'));
+  });
+
+  it('meta のないルームでは、どんな文字列を invite にしてもメンバーになれない', async () => {
+    await assertFails(
+      db(CAROL).ref(`v2/rooms/empty/members/${CAROL.uid}`).set({ name: 'だれか', joinedAt: 1, invite: 'anything' }),
+    );
+  });
+
+  describe('既存のルームで', () => {
+    beforeEach(seedRoomWithBob);
+
+    it('ログインしていない人は meta を読めない', async () => {
+      await assertFails(anonDb().ref(`v2/rooms/${ROOM}/meta`).once('value'));
+    });
+
+    it('メンバーでも日付ごと stamps/2026-12-01 を消すことはできない', async () => {
+      await assertFails(db(ALICE).ref(`v2/rooms/${ROOM}/stamps/2026-12-01`).remove());
+      await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/stamps/2026-12-01`).remove());
+    });
+
+    it('stampTypes を文字列で上書きすることはできない', async () => {
+      await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/stampTypes`).set('x'));
+    });
+
+    it('stampTypes をまるごと消すことは今までどおりできる', async () => {
+      await assertSucceeds(db(BOB).ref(`v2/rooms/${ROOM}/stampTypes`).set(null));
+    });
+
+    it('くり返しの skips を文字列などで上書きすることはできない', async () => {
+      await assertFails(db(ALICE).ref(`v2/rooms/${ROOM}/repeats/r1/skips`).set(true));
+    });
+
+    it('v2/users/{uid} とその rooms を文字列で上書きすることはできない', async () => {
+      await assertFails(db(BOB).ref(`v2/users/${BOB.uid}`).set('x'));
+      await assertFails(db(BOB).ref(`v2/users/${BOB.uid}/rooms`).set('x'));
+    });
+
+    it('【認めている動き】メンバーは自分の uid のまま、表示名と違う userName でスタンプを押せる', async () => {
+      await assertSucceeds(
+        db(BOB).ref(`v2/rooms/${ROOM}/stamps/2026-12-03/s9`).set(stamp(BOB.uid, { userName: 'べつの名前' })),
+      );
+    });
+  });
+});
