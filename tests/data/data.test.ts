@@ -94,7 +94,7 @@ function waitRoom(
       reject(new Error('timeout waiting for room'));
     }, 8000);
     const unsub = subscribeRoom(db, roomId, (room) => {
-      if (pred(room)) {
+      if (room && pred(room)) {
         clearTimeout(timer);
         queueMicrotask(() => unsub());
         resolve(room);
@@ -285,5 +285,28 @@ describe('client data layer', () => {
     expect(v.members[mama.uid].name).toBe('ママ');
     expect(Object.keys(v.stampTypes)).toHaveLength(10);
     expect(v.stamps[TODAY][id].memo).toBeUndefined();
+  });
+
+  it('メンバーでない人の購読と、存在しないルームの購読は onError が呼ばれる', async () => {
+    const mama = await newCreator();
+    const roomId = await createRoom(mama.db, { uid: mama.uid, name: 'ママ' }, 'わが家');
+    await waitRoom(mama.db, roomId);
+    const outsider = await makeUser(false);
+    // 規則上、存在しないルームも非メンバーも同じ permission-denied になる
+    for (const id of [roomId, 'no-such-room']) {
+      const err = await new Promise<Error>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('onError not called')), 8000);
+        subscribeRoom(
+          outsider.db,
+          id,
+          () => reject(new Error('cb must not be called')),
+          (e) => {
+            clearTimeout(timer);
+            resolve(e);
+          },
+        );
+      });
+      expect(err.message).toMatch(/permission/i);
+    }
   });
 });

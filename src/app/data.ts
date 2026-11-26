@@ -40,7 +40,7 @@ export interface UserInfo {
   name: string;
 }
 
-const ROOM_NAME_MAX = 40;
+const ROOM_NAME_MAX = 20; // 規則の上限は40だが、画面では20文字までにする
 const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 /** 32文字の英数字（ブラウザでも Node でも使える crypto を利用） */
@@ -72,7 +72,7 @@ function roomPath(roomId: string, rest = ''): string {
 
 function checkRoomName(name: string): string | null {
   if (name.trim() === '') return 'ルームの名前を入力してください';
-  if (Array.from(name).length > 20) return 'ルームの名前は20文字までにしてください';
+  if (Array.from(name).length > ROOM_NAME_MAX) return `ルームの名前は${ROOM_NAME_MAX}文字までにしてください`;
   return null;
 }
 
@@ -126,26 +126,34 @@ export async function listMyRooms(db: Database, uid: string): Promise<string[]> 
   return snap.exists() ? Object.keys(snap.val() as Record<string, true>) : [];
 }
 
+/**
+ * ルームを購読する。
+ * - メンバーでない人・存在しないルームは、規則上どちらも読めない（permission-denied）ので onError が呼ばれる。
+ * - 読めるのに meta がない（壊れたルーム）場合は cb(null)。
+ */
 export function subscribeRoom(
   db: Database,
   roomId: string,
-  cb: (room: RoomSnapshot) => void,
+  cb: (room: RoomSnapshot | null) => void,
+  onError?: (e: Error) => void,
 ): () => void {
   return onValue(
     ref(db, roomPath(roomId)),
     (snap) => {
       const v = (snap.val() ?? {}) as Partial<RoomSnapshot>;
+      if (!v.meta) {
+        cb(null);
+        return;
+      }
       cb({
-        meta: v.meta as RoomMeta,
+        meta: v.meta,
         members: v.members ?? {},
         stampTypes: v.stampTypes ?? {},
         stamps: v.stamps ?? {},
         repeats: normalizeRepeats(v.repeats),
       });
     },
-    () => {
-      // 読む権限がない（メンバーでない）場合は何も届けない
-    },
+    (e) => onError?.(e),
   );
 }
 
