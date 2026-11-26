@@ -5,7 +5,7 @@ import { isInAppBrowser } from '../inAppBrowser';
 import { InAppNotice } from './InAppNotice';
 import { Toast } from './Toast';
 
-export function LoginScreen({ auth }: { auth: Auth }) {
+export function LoginScreen({ auth, notice = '' }: { auth: Auth; notice?: string }) {
   const [error, setError] = useState('');
 
   if (isInAppBrowser(navigator.userAgent)) return <InAppNotice />;
@@ -29,7 +29,7 @@ export function LoginScreen({ auth }: { auth: Auth }) {
       <button type="button" onClick={login}>
         Googleでログイン
       </button>
-      {error && <Toast message={error} />}
+      {(error || notice) && <Toast message={error || notice} />}
     </section>
   );
 }

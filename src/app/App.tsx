@@ -15,15 +15,20 @@ export function App() {
 function FamilyApp({ route }: { route: Route }) {
   const { auth, db } = useMemo(() => getFirebase('family'), []);
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [redirectError, setRedirectError] = useState('');
 
   useEffect(() => {
-    getRedirectResult(auth).catch(() => {}); // リダイレクト後のログイン結果を受け取る
+    // リダイレクト後のログイン結果を受け取る
+    getRedirectResult(auth).catch((e) => {
+      console.error(e);
+      setRedirectError('ログインできませんでした。もう一度お試しください。');
+    });
     return onAuthStateChanged(auth, setUser);
   }, [auth]);
 
   const info = useMemo(() => (user ? toUserInfo(user) : null), [user]);
 
   if (user === undefined) return <p className="loading">読み込み中…</p>;
-  if (user === null || !info) return <LoginScreen auth={auth} />;
+  if (user === null || !info) return <LoginScreen auth={auth} notice={redirectError} />;
   return <RoomGate db={db} user={info} route={route} />;
 }
