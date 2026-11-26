@@ -13,17 +13,20 @@ interface Props {
   uid: string;
   /** サーバーとつながっているか */
   online?: boolean;
+  /** 見本ルーム: 招待・購読URLは使えず、「最初の状態に戻す」を出す */
+  demo?: boolean;
   onClose: () => void;
   onMessage: (message: string) => void;
   onEditStamps: () => void;
   onSignOut: () => void;
 }
 
+const DEMO_UNAVAILABLE = '見本では使えません';
 const CONFIRM_TEXT = '今のURLは使えなくなります。作り直しますか？';
 
 type UrlKind = 'invite' | 'feed';
 
-export function SettingsSheet({ db, roomId, room, uid, online = true, onClose, onMessage, onEditStamps, onSignOut }: Props) {
+export function SettingsSheet({ db, roomId, room, uid, online = true, demo = false, onClose, onMessage, onEditStamps, onSignOut }: Props) {
   const savedName = room.members[uid]?.name ?? '';
   const [name, setName] = useState(savedName);
   const [nameError, setNameError] = useState('');
@@ -63,7 +66,24 @@ export function SettingsSheet({ db, roomId, room, uid, online = true, onClose, o
     }
   }
 
+  async function resetDemo() {
+    setBusy(true);
+    try {
+      const res = await fetch('/api/demo/reset', { method: 'POST' });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      onMessage('最初の状態に戻しました');
+    } catch {
+      onMessage('最初の状態に戻せませんでした。しばらくしてからもう一度ためしてください');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function copy(kind: UrlKind) {
+    if (demo) {
+      onMessage(DEMO_UNAVAILABLE);
+      return;
+    }
     try {
       await navigator.clipboard.writeText(urls[kind]);
       setShowUrl(null);
@@ -108,17 +128,19 @@ export function SettingsSheet({ db, roomId, room, uid, online = true, onClose, o
             <button type="button" className="btn btn-primary" onClick={() => void copy(kind)}>
               {noun}をコピー
             </button>
-            <button
-              type="button"
-              className="btn btn-soft"
-              disabled={!online}
-              onClick={() => setConfirming(kind)}
-            >
-              {noun}を作り直す
-            </button>
+            {!demo && (
+              <button
+                type="button"
+                className="btn btn-soft"
+                disabled={!online}
+                onClick={() => setConfirming(kind)}
+              >
+                {noun}を作り直す
+              </button>
+            )}
           </div>
         )}
-        {!online && <p className="settings-note">インターネットにつながっているときに作り直せます</p>}
+        {!online && !demo && <p className="settings-note">インターネットにつながっているときに作り直せます</p>}
         {showUrl === kind && (
           <input
             className="field-input url-box"
@@ -187,9 +209,19 @@ export function SettingsSheet({ db, roomId, room, uid, online = true, onClose, o
           </button>
         </section>
 
-        <button type="button" className="btn btn-danger-soft" onClick={onSignOut}>
-          ログアウト
-        </button>
+        {demo ? (
+          <section className="settings-section">
+            <h2 className="settings-title">見本ルーム</h2>
+            <p className="settings-note">毎日朝3時に自動で元に戻ります。いますぐ戻すこともできます。</p>
+            <button type="button" className="btn btn-soft" disabled={busy || !online} onClick={() => void resetDemo()}>
+              最初の状態に戻す
+            </button>
+          </section>
+        ) : (
+          <button type="button" className="btn btn-danger-soft" onClick={onSignOut}>
+            ログアウト
+          </button>
+        )}
       </div>
     </Sheet>
   );

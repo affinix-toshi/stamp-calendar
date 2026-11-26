@@ -8,6 +8,7 @@ import { rtdbGet, UpstreamError, type RtdbEnv } from './rtdb';
 const FEED_PATH = /^\/feed\/([^/]+)\/([^/]+)\.ics$/;
 const ROOM_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const TOKEN = /^[A-Za-z0-9]{32}$/;
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
 /** ルームがない・合言葉が違う・形がおかしい、どれも同じ返事にする */
 function notFound(): Response {
@@ -48,7 +49,7 @@ function collectEntries(
   }
   const days = new Set<DateKey>(repeatsByDay.keys());
   for (const day of Object.keys(stamps ?? {})) {
-    if (day >= from && day <= to) days.add(day);
+    if (DATE_KEY.test(day) && day >= from && day <= to) days.add(day);
   }
   return [...days]
     .sort()
@@ -88,7 +89,7 @@ export async function handleFeed(
     });
     return new Response(request.method === 'HEAD' ? null : ics, {
       status: 200,
-      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'max-age=900' },
+      headers: { 'Content-Type': 'text/calendar; charset=utf-8', 'Cache-Control': 'private, max-age=900' },
     });
   } catch (e) {
     // 合言葉・ルームID・URL はログに出さない。理由の短い言葉だけ

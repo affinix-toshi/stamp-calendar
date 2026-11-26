@@ -11,6 +11,10 @@
   //   FAMILY_SA_JSON … 家族用サービスアカウント鍵の JSON
   //   DEMO_SA_JSON   … 見本用サービスアカウント鍵の JSON
   // 手元で動かすときは .dev.vars に入れる（.dev.vars.example を参照）
+  // 毎日 18:00 UTC = 日本時間 3:00 に見本ルームを最初の状態に戻す
+  "triggers": {
+    "crons": ["0 18 * * *"]
+  },
   "vars": {
     "FAMILY_DB_URL": "https://stamp-calendar-3e7e0-default-rtdb.asia-southeast1.firebasedatabase.app",
     // 見本用プロジェクトを作ったら入れる

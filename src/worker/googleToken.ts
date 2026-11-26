@@ -9,6 +9,7 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const SCOPE =
   'https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email';
 const REFRESH_MARGIN_MS = 5 * 60 * 1000;
+const FETCH_TIMEOUT_MS = 10_000;
 
 /** 同じ Worker の中では使い回す（client_email ごと） */
 const cache = new Map<string, { token: string; expiresAt: number }>();
@@ -70,6 +71,7 @@ export async function getAccessToken(sa: ServiceAccount, fetchFn: typeof fetch =
   const assertion = await signJwt(sa, Math.floor(now / 1000));
   const res = await fetchFn(TOKEN_URL, {
     method: 'POST',
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',

@@ -10,6 +10,9 @@ export interface RtdbEnv {
 
 export type RtdbTarget = 'family' | 'demo';
 
+/** 外への通信が止まったままにならないよう、10秒で打ち切る */
+export const UPSTREAM_TIMEOUT_MS = 10_000;
+
 /** 外へ出してよい短い理由だけを持つエラー（鍵・URL・パスは入れない） */
 export class UpstreamError extends Error {
   constructor(readonly reason: 'not_configured' | 'token_failed' | 'db_error') {
@@ -53,6 +56,7 @@ async function request(
   try {
     res = await fetchFn(`${dbUrl}/${path}.json`, {
       ...init,
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       headers: { ...(init.headers as Record<string, string> | undefined), Authorization: `Bearer ${token}` },
     });
   } catch {

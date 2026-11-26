@@ -18,6 +18,8 @@ interface Props {
   room: RoomSnapshot;
   user: UserInfo;
   onSignOut: () => void;
+  /** 見本ルーム: 上に案内を出し、設定を見本用にする */
+  demo?: boolean;
 }
 
 const TOAST_MS = 2800;
@@ -52,7 +54,7 @@ function useOnline(db: Database): boolean {
   return online;
 }
 
-export function RoomScreen({ db, roomId, room, user, onSignOut }: Props) {
+export function RoomScreen({ db, roomId, room, user, onSignOut, demo = false }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [openEntry, setOpenEntry] = useState<DayEntry | null>(null);
   const [openDay, setOpenDay] = useState<DateKey | null>(null);
@@ -124,6 +126,12 @@ export function RoomScreen({ db, roomId, room, user, onSignOut }: Props) {
         </button>
       </header>
 
+      {demo && (
+        <p className="demo-banner" role="status">
+          見本です。毎日朝3時に元に戻ります
+        </p>
+      )}
+
       {!online && (
         <p className="offline-banner" role="status">
           ⚠️ オフライン中 — 変更はつながったときに反映されます
@@ -177,6 +185,7 @@ export function RoomScreen({ db, roomId, room, user, onSignOut }: Props) {
           room={room}
           uid={user.uid}
           online={online}
+          demo={demo}
           onClose={closePanel}
           onMessage={showToast}
           onEditStamps={() => setPanel('editor')}

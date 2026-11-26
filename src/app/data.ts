@@ -3,10 +3,12 @@ import {
   onValue,
   push,
   ref,
+  set,
   update,
   type Database,
 } from 'firebase/database';
 import { DEFAULT_STAMP_TYPES } from '../shared/defaults';
+import { DEMO_ROOM_ID, DEMO_VISITOR_NAME } from '../shared/demoSeed';
 import { checkDisplayName, checkLabel, checkMemo } from '../shared/validate';
 import { endBefore } from '../shared/repeats';
 import type { DateKey, DayEntry, Repeat, Stamp, StampType } from '../shared/types';
@@ -325,4 +327,11 @@ export async function regenerateFeedToken(db: Database, roomId: string): Promise
   const token = randomToken();
   await update(ref(db), { [roomPath(roomId, 'meta/feedToken')]: token });
   return token;
+}
+
+/** 見本ルーム: まだ入っていなければ「見学の方」として加わる（毎朝のリセットで消えるので、開くたびに確かめる） */
+export async function ensureDemoMember(db: Database, uid: string): Promise<void> {
+  const memberRef = ref(db, roomPath(DEMO_ROOM_ID, `members/${uid}`));
+  if ((await get(memberRef)).exists()) return;
+  await set(memberRef, { name: DEMO_VISITOR_NAME, joinedAt: Date.now() });
 }

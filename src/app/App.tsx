@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getRedirectResult, onAuthStateChanged, signOut, type User } from 'firebase/auth';
+import { getRedirectResult, onAuthStateChanged, signInAnonymously, signOut, type User } from 'firebase/auth';
 import { getFirebase } from './firebase';
 import { parseRoute, type Route } from './router';
 import { toUserInfo } from './auth';
@@ -7,11 +7,35 @@ import { LoginScreen } from './components/LoginScreen';
 import { InstallGuide } from './components/InstallGuide';
 import { Toast } from './components/Toast';
 import { RoomGate } from './components/RoomGate';
+import { DemoRoom } from './components/DemoRoom';
 
 export function App() {
   const route = useMemo(() => parseRoute(window.location.pathname), []);
-  if (route.name === 'demo') return <p>見本ルームは準備中です</p>;
+  if (route.name === 'demo') return <DemoApp />;
   return <FamilyApp route={route} />;
+}
+
+/** /demo: Google ログインなしで、見本用の別プロジェクトに匿名でログインして開く */
+function DemoApp() {
+  const { auth, db } = useMemo(() => getFirebase('demo'), []);
+  const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (u === null) {
+        signInAnonymously(auth).catch((e) => {
+          console.error(e);
+          setError('見本を開けませんでした。しばらくしてからもう一度ためしてください。');
+        });
+      }
+    });
+  }, [auth]);
+
+  if (error) return <Toast message={error} />;
+  if (!user) return <p className="loading">読み込み中…</p>;
+  return <DemoRoom db={db} uid={user.uid} />;
 }
 
 function FamilyApp({ route }: { route: Route }) {

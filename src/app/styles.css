@@ -932,6 +932,20 @@ input:focus-visible,
   }
 }
 
+/* ---------- 見本ルームの案内 ---------- */
+
+.demo-banner {
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  background: #e6f0ff;
+  color: #1d3f7a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /* ---------- つながっていないときの案内 ---------- */
 
 .offline-banner {

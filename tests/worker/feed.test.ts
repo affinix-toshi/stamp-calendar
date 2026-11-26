@@ -67,7 +67,7 @@ describe('GET /feed/{roomId}/{token}.ics', () => {
     const res = await handleFeed(req(`/feed/${ROOM}/${TOKEN}.ics`), env, be.fetchFn);
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toBe('text/calendar; charset=utf-8');
-    expect(res.headers.get('Cache-Control')).toBe('max-age=900');
+    expect(res.headers.get('Cache-Control')).toBe('private, max-age=900');
     const body = unfold(await res.text());
     expect(body).toContain('X-WR-CALNAME:スタンプカレンダー（山田家）');
     expect(body).toContain('SUMMARY:🏠今日の在宅（トシ）');
@@ -159,6 +159,57 @@ describe('GET /feed/{roomId}/{token}.ics', () => {
     const res = await handleFeed(req(`/feed/${ROOM}/${TOKEN}.ics`), { FAMILY_DB_URL: DB_URL }, be.fetchFn);
     expect(res.status).toBe(503);
     expect(JSON.stringify(err.mock.calls)).not.toContain(TOKEN);
+  });
+
+  it('日付の形でないスタンプのキーは読み飛ばす', async () => {
+    const data = roomData();
+    const stamps = data[`v2/rooms/${ROOM}/stamps`] as Record<string, unknown>;
+    stamps['2026-12-1'] = { x1: stamp('形がおかしい1', 60) };
+    stamps['2026-12-01-x'] = { x2: stamp('形がおかしい2', 70) };
+    stamps['2026-12-02'] = { x3: stamp('ちゃんとした日', 80) };
+    const be = fakeBackend(data);
+    const res = await handleFeed(req(`/feed/${ROOM}/${TOKEN}.ics`), env, be.fetchFn);
+    expect(res.status).toBe(200);
+    const body = unfold(await res.text());
+    expect(body).toContain('ちゃんとした日');
+    expect(body).not.toContain('形がおかしい1');
+    expect(body).not.toContain('形がおかしい2');
+  });
+
+  it('外への通信には10秒の時間切れが付く', async () => {
+    const be = fakeBackend(roomData());
+    const signals: (AbortSignal | null | undefined)[] = [];
+    const spy = ((input: RequestInfo | URL, init?: RequestInit) => {
+      signals.push(init?.signal);
+      return be.fetchFn(input, init);
+    }) as typeof fetch;
+    const res = await handleFeed(req(`/feed/${ROOM}/${TOKEN}.ics`), env, spy);
+    expect(res.status).toBe(200);
+    expect(signals.length).toBeGreaterThanOrEqual(2); // トークン交換 + データ読み取り
+    for (const s of signals) expect(s).toBeInstanceOf(AbortSignal);
+  });
+
+  it.each(['TimeoutError', 'AbortError'])('データベースが %s で止まったら 503（中身は出さない）', async (name) => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const be = fakeBackend(roomData());
+    const hang = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.startsWith(DB_URL)) throw new DOMException('timed out', name);
+      return be.fetchFn(input, init);
+    }) as typeof fetch;
+    const res = await handleFeed(req(`/feed/${ROOM}/${TOKEN}.ics`), env, hang);
+    expect(res.status).toBe(503);
+    expect(await res.text()).toBe('Service Unavailable');
+    expect(JSON.stringify(err.mock.calls)).not.toContain(TOKEN);
+  });
+
+  it('トークン交換が時間切れでも 503', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const hang = (async () => {
+      throw new DOMException('timed out', 'TimeoutError');
+    }) as typeof fetch;
+    const res = await handleFeed(req(`/feed/${ROOM}/${TOKEN}.ics`), env, hang);
+    expect(res.status).toBe(503);
   });
 
   it('Worker の入口から /feed/ に届く', async () => {
