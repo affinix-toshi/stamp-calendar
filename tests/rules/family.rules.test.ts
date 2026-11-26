@@ -277,8 +277,9 @@ describe('参加（招待コード）', () => {
     );
   });
 
-  it('表示名が11文字なら参加できない', async () => {
-    await assertFails(db(BOB).ref().update(joinUpdate(BOB.uid, CODE_A, 'あ'.repeat(11))));
+  // ルールは最後の砦。正確な文字数（Array.from）はアプリが見るので、ルールは UTF-16 で2倍まで許す
+  it('表示名が21文字なら参加できない', async () => {
+    await assertFails(db(BOB).ref().update(joinUpdate(BOB.uid, CODE_A, 'a'.repeat(21))));
   });
 });
 
@@ -307,9 +308,9 @@ describe('メンバー情報の変更', () => {
     await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/members/${BOB.uid}/admin`).set(true));
   });
 
-  it('表示名を空や11文字にはできない', async () => {
+  it('表示名を空や21文字にはできない', async () => {
     await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/members/${BOB.uid}/name`).set(''));
-    await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/members/${BOB.uid}/name`).set('あ'.repeat(11)));
+    await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/members/${BOB.uid}/name`).set('a'.repeat(21)));
   });
 });
 
@@ -358,9 +359,15 @@ describe('stampTypes', () => {
     );
   });
 
-  it('7文字のスタンプ名ははじかれる', async () => {
+  it('13文字のスタンプ名ははじかれる', async () => {
     await assertFails(
-      db(BOB).ref(`v2/rooms/${ROOM}/stampTypes/t3`).set({ emoji: '🎹', label: 'あ'.repeat(7), order: 2 }),
+      db(BOB).ref(`v2/rooms/${ROOM}/stampTypes/t3`).set({ emoji: '🎹', label: 'a'.repeat(13), order: 2 }),
+    );
+  });
+
+  it('4バイトの絵文字6つのスタンプ名は通る', async () => {
+    await assertSucceeds(
+      db(BOB).ref(`v2/rooms/${ROOM}/stampTypes/t3`).set({ emoji: '🍷', label: '🍷'.repeat(6), order: 2 }),
     );
   });
 
@@ -405,16 +412,22 @@ describe('stamps', () => {
     await assertFails(db(ALICE).ref(`v2/rooms/${ROOM}/stamps/2026-12-01/s1/uid`).set(BOB.uid));
   });
 
-  it('21文字のメモははじかれる、20文字は通る', async () => {
+  it('41文字のメモははじかれる、20文字は通る', async () => {
     const ref = db(BOB).ref(`v2/rooms/${ROOM}/stamps/2026-12-02`);
-    await assertFails(ref.child('s2').set(stamp(BOB.uid, { memo: 'あ'.repeat(21) })));
+    await assertFails(ref.child('s2').set(stamp(BOB.uid, { memo: 'a'.repeat(41) })));
     await assertSucceeds(ref.child('s3').set(stamp(BOB.uid, { memo: 'あ'.repeat(20) })));
   });
 
-  it('7文字のスタンプ名ははじかれる', async () => {
-    await assertFails(
-      db(BOB).ref(`v2/rooms/${ROOM}/stamps/2026-12-02/s2`).set(stamp(BOB.uid, { label: 'あ'.repeat(7) })),
+  it('4バイトの絵文字20個のメモは通る', async () => {
+    await assertSucceeds(
+      db(BOB).ref(`v2/rooms/${ROOM}/stamps/2026-12-02/s2`).set(stamp(BOB.uid, { memo: '🍷'.repeat(20) })),
     );
+  });
+
+  it('13文字のスタンプ名ははじかれる、4バイトの絵文字6つは通る', async () => {
+    const ref = db(BOB).ref(`v2/rooms/${ROOM}/stamps/2026-12-02`);
+    await assertFails(ref.child('s2').set(stamp(BOB.uid, { label: 'a'.repeat(13) })));
+    await assertSucceeds(ref.child('s3').set(stamp(BOB.uid, { label: '🍷'.repeat(6) })));
   });
 
   it('日付が YYYY-MM-DD の形でないとはじかれる', async () => {
@@ -452,8 +465,8 @@ describe('repeats', () => {
     await assertSucceeds(db(ALICE).ref(`v2/rooms/${ROOM}/repeats/r1`).remove());
   });
 
-  it('21文字のメモははじかれる', async () => {
-    await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/repeats/r2`).set(repeat(BOB.uid, { memo: 'あ'.repeat(21) })));
+  it('41文字のメモははじかれる', async () => {
+    await assertFails(db(BOB).ref(`v2/rooms/${ROOM}/repeats/r2`).set(repeat(BOB.uid, { memo: 'a'.repeat(41) })));
   });
 
   it('曜日は 0〜6 の数字だけ', async () => {

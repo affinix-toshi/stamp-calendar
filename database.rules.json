@@ -34,7 +34,7 @@
             ".write": "auth != null && newData.exists() && ((!data.exists() && auth.token.email_verified === true && root.child('v2/config/creators/' + auth.token.email.replace('.', ',')).val() === true && newData.child('createdBy').val() === auth.uid) || (data.exists() && root.child('v2/rooms/' + $roomId + '/members/' + auth.uid).exists()))",
             ".validate": "newData.hasChildren(['name', 'createdBy', 'createdAt', 'inviteCode', 'feedToken'])",
             "name": {
-              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20 && (!data.exists() || newData.val() === data.val())"
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40 && (!data.exists() || newData.val() === data.val())"
             },
             "createdBy": {
               ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
@@ -57,7 +57,7 @@
               ".write": "auth != null && $uid === auth.uid && newData.exists() && ((data.exists() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('invite').val() === data.child('invite').val()) || (!data.exists() && (newData.parent().parent().child('meta/createdBy').val() === auth.uid || (newData.child('invite').isString() && newData.child('invite').val() === root.child('v2/rooms/' + $roomId + '/meta/inviteCode').val()))))",
               ".validate": "newData.hasChildren(['name', 'joinedAt'])",
               "name": {
-                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 10"
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
               },
               "joinedAt": {
                 ".validate": "newData.isNumber()"
@@ -78,7 +78,7 @@
                 ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
               },
               "label": {
-                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 6"
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
               },
               "order": {
                 ".validate": "newData.isNumber()"
@@ -98,19 +98,19 @@
                   ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
                 },
                 "label": {
-                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 6"
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
                 },
                 "uid": {
                   ".validate": "newData.isString()"
                 },
                 "userName": {
-                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 10"
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
                 },
                 "ts": {
                   ".validate": "newData.isNumber()"
                 },
                 "memo": {
-                  ".validate": "newData.isString() && newData.val().length <= 20"
+                  ".validate": "newData.isString() && newData.val().length <= 40"
                 },
                 "$other": {
                   ".validate": false
@@ -126,19 +126,19 @@
                 ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
               },
               "label": {
-                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 6"
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
               },
               "uid": {
                 ".validate": "newData.isString()"
               },
               "userName": {
-                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 10"
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
               },
               "ts": {
                 ".validate": "newData.isNumber()"
               },
               "memo": {
-                ".validate": "newData.isString() && newData.val().length <= 20"
+                ".validate": "newData.isString() && newData.val().length <= 40"
               },
               "weekdays": {
                 ".validate": "newData.hasChildren()",
