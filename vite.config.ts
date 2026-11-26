@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
           name: "node",
           environment: "node",
           include: ["tests/**/*.test.{ts,tsx}"],
-          exclude: ["tests/app/**"],
+          exclude: ["tests/app/**", "tests/rules/**"],
         },
       },
       {
@@ -21,6 +21,17 @@ export default defineConfig(({ mode }) => ({
           name: "app",
           environment: "jsdom",
           include: ["tests/app/**/*.test.{ts,tsx}"],
+        },
+      },
+      {
+        // Database エミュレーターが必要。npm run test:rules からだけ動かす
+        extends: true,
+        test: {
+          name: "rules",
+          environment: "node",
+          include: ["tests/rules/**/*.test.ts"],
+          testTimeout: 20000,
+          hookTimeout: 20000,
         },
       },
     ],

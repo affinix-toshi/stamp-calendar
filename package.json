@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "vitest run",
+    "test": "vitest run --project node --project app",
+    "test:rules": "firebase emulators:exec --only database --project demo-stamp-calendar \"vitest run --project rules\"",
     "typecheck": "tsc --noEmit",
     "deploy": "vite build && wrangler deploy"
   },
@@ -17,12 +18,15 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.70.2",
     "@cloudflare/workers-types": "^5.20261125.1",
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
     "@types/react": "^19.3.3",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "firebase": "^13.4.0",
+    "firebase-tools": "^15.37.0",
     "jsdom": "^29.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",

@@ -3,3 +3,5 @@ dist/
 .wrangler/
 .secrets/
 .dev.vars
+firebase-debug.log
+database-debug.log
