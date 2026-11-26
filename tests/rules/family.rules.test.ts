@@ -129,6 +129,21 @@ describe('旧データ rooms/（Task 15 までは今までどおり）', () => {
   it('ログインしていなくても rooms/ABCDE を読める', async () => {
     await assertSucceeds(anonDb().ref('rooms/ABCDE').once('value'));
   });
+
+  it('ログインしていなくても rooms/ABCDE/stamps の中を読める', async () => {
+    await assertSucceeds(anonDb().ref('rooms/ABCDE/stamps/2026-12-01').once('value'));
+  });
+
+  it('rooms 全体（ルームの一覧）は読めない（本番と同じ、ルームごとの許可）', async () => {
+    await assertFails(anonDb().ref('rooms').once('value'));
+  });
+
+  it('rooms 全体をまとめて消すことはできない', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.database().ref('rooms/ABCDE/stamps/2026-12-01/x1').set({ emoji: '🏠', label: '在宅', user: 'ママ' });
+    });
+    await assertFails(anonDb().ref('rooms').set(null));
+  });
 });
 
 describe('v2/health と v2/config', () => {
