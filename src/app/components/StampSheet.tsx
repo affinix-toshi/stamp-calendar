@@ -4,7 +4,7 @@ import { weekdayOf } from '../../shared/dates';
 import type { DayEntry } from '../../shared/types';
 import { checkMemo } from '../../shared/validate';
 import { deleteStamp, endRepeatFrom, makeRepeat, setMemo, skipRepeatDate } from '../data';
-import { WEEKDAY_NAMES, longDate, writeFailed } from '../format';
+import { OFFLINE_NOTE, WEEKDAY_NAMES, longDate, writeFailed } from '../format';
 
 interface Props {
   db: Database;
@@ -13,6 +13,8 @@ interface Props {
   /** 押した人の表示名 */
   name: string;
   isMine: boolean;
+  /** サーバーとつながっているか（false なら返事を待たずに閉じる） */
+  online?: boolean;
   /** くり返しのスタンプなら、その曜日 */
   repeatWeekdays?: number[];
   onClose: () => void;
@@ -26,7 +28,17 @@ function weekdayList(days: number[]): string {
   return [...days].sort((a, b) => a - b).map((d) => WEEKDAY_NAMES[d]).join('・');
 }
 
-export function StampSheet({ db, roomId, entry, name, isMine, repeatWeekdays, onClose, onMessage }: Props) {
+export function StampSheet({
+  db,
+  roomId,
+  entry,
+  name,
+  isMine,
+  online = true,
+  repeatWeekdays,
+  onClose,
+  onMessage,
+}: Props) {
   const [mode, setMode] = useState<Mode>('main');
   const [memo, setMemoText] = useState(entry.memo ?? '');
   const [weekdays, setWeekdays] = useState<number[]>([weekdayOf(entry.date)]);
@@ -43,6 +55,14 @@ export function StampSheet({ db, roomId, entry, name, isMine, repeatWeekdays, on
   }, [onClose]);
 
   async function run(work: () => Promise<unknown>, done: string, failLead: string) {
+    if (!online) {
+      // つながっていないと Firebase の返事が来ないので、待たずに閉じる。
+      // 変更は端末に先に反映され、つながったときに送られる。
+      work().catch((e) => onMessage(writeFailed(failLead, e)));
+      onMessage(done + OFFLINE_NOTE);
+      onClose();
+      return;
+    }
     setBusy(true);
     try {
       await work();
@@ -57,7 +77,7 @@ export function StampSheet({ db, roomId, entry, name, isMine, repeatWeekdays, on
   const memoError = checkMemo(memo);
   const memoChanged = memo !== (entry.memo ?? '');
   const memoCount = Array.from(memo).length;
-  const endError = end !== '' && end < entry.date ? '終わりの日は、この日より後にしてください' : null;
+  const endError = end !== '' && end < entry.date ? '終わりの日は、この日以降にしてください' : null;
   const repeatError = weekdays.length === 0 ? 'くり返す曜日を選んでください' : endError;
 
   const saveMemo = () =>
@@ -137,6 +157,12 @@ export function StampSheet({ db, roomId, entry, name, isMine, repeatWeekdays, on
           </div>
         )}
 
+        {busy && (
+          <p className="sheet-busy" role="status">
+            保存中…
+          </p>
+        )}
+
         {isMine && mode === 'main' && (
           <div className="sheet-body">
             <div className="field">
@@ -151,9 +177,11 @@ export function StampSheet({ db, roomId, entry, name, isMine, repeatWeekdays, on
                 className="field-input"
                 type="text"
                 value={memo}
-                placeholder={isRepeat ? '例：18時から（くり返しの全部の日に付きます）' : '例：18時から'}
+                placeholder="例：18時から"
                 onChange={(e) => setMemoText(e.target.value)}
               />
+              {/* setMemo はくり返しのとき repeats/{id}/memo に書くので、全部の日に付く */}
+              {isRepeat && <p className="field-hint">くり返しのメモは、全部の日に付きます</p>}
               {memoError && (
                 <p className="field-error" role="alert">
                   {memoError}

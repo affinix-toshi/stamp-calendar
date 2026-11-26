@@ -25,3 +25,6 @@ export function writeFailed(lead: string, e: unknown): string {
   console.error(e);
   return `${lead}。通信の状態を確かめて、もう一度ためしてください。`;
 }
+
+/** つながっていないときにお知らせの後ろに付ける */
+export const OFFLINE_NOTE = '（つながったときに反映されます）';

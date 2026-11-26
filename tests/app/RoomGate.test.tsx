@@ -7,6 +7,7 @@ vi.mock('../../src/app/data', () => ({
   joinRoom: vi.fn(),
   listMyRooms: vi.fn(),
   subscribeRoom: vi.fn(),
+  subscribeConnected: vi.fn(() => () => {}),
 }));
 
 import * as data from '../../src/app/data';

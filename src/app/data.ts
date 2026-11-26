@@ -157,6 +157,11 @@ export function subscribeRoom(
   );
 }
 
+/** サーバーとつながっているか（.info/connected）を購読する */
+export function subscribeConnected(db: Database, cb: (connected: boolean) => void): () => void {
+  return onValue(ref(db, '.info/connected'), (snap) => cb(snap.val() === true));
+}
+
 /** Firebase は空の配列やスキップを落とすので、weekdays を配列として揃える */
 function normalizeRepeats(repeats: Record<string, Repeat> | undefined): Record<string, Repeat> {
   const out: Record<string, Repeat> = {};

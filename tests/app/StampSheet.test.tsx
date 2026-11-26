@@ -9,6 +9,7 @@ vi.mock('../../src/app/data', () => ({
   makeRepeat: vi.fn(),
   skipRepeatDate: vi.fn(),
   endRepeatFrom: vi.fn(),
+  subscribeConnected: vi.fn(),
 }));
 
 import * as data from '../../src/app/data';
@@ -140,5 +141,20 @@ describe('StampSheet', () => {
     );
     expect(err).toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('終わりの日がその日より前なら「この日以降」と理由を出す', () => {
+    renderSheet(stampEntry, true);
+    fireEvent.click(screen.getByRole('button', { name: 'くり返し' }));
+    fireEvent.change(screen.getByLabelText('終わりの日（なくてもOK）'), { target: { value: '2026-12-01' } });
+    expect(screen.getByText('終わりの日は、この日以降にしてください')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'くり返しを始める' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('終わりの日（なくてもOK）'), { target: { value: '2026-12-02' } });
+    expect(screen.getByRole('button', { name: 'くり返しを始める' })).toBeEnabled();
+  });
+
+  it('くり返しのメモは全部の日に付くことを案内する', () => {
+    renderSheet(repeatEntry, true);
+    expect(screen.getByText('くり返しのメモは、全部の日に付きます')).toBeInTheDocument();
   });
 });

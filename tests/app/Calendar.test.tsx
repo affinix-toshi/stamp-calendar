@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/app/data', () => ({
@@ -9,6 +9,7 @@ vi.mock('../../src/app/data', () => ({
   makeRepeat: vi.fn(),
   skipRepeatDate: vi.fn(),
   endRepeatFrom: vi.fn(),
+  subscribeConnected: vi.fn(),
 }));
 
 import * as data from '../../src/app/data';
@@ -40,8 +41,16 @@ function makeRoom(over: Partial<RoomSnapshot> = {}): RoomSnapshot {
   };
 }
 
+// つながり状態をテストから変えられるようにする
+let setConnected: (v: boolean) => void = () => {};
+
 beforeEach(() => {
   vi.mocked(data.addStamps).mockResolvedValue();
+  vi.mocked(data.subscribeConnected).mockImplementation((_db, cb) => {
+    setConnected = (v) => act(() => cb(v));
+    cb(true);
+    return () => {};
+  });
 });
 afterEach(() => {
   cleanup();
@@ -71,7 +80,7 @@ describe('カレンダーとパレット', () => {
     expect(screen.getByRole('button', { name: '🏠 家' })).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('何も選ばずに日付をタップすると「下のスタンプを選んでください」と出る', () => {
+  it('何も選ばずにスタンプのない日をタップすると「下のスタンプを選んでください」と出る', () => {
     render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
     expect(screen.getByText('下のスタンプを選んでください')).toBeInTheDocument();
@@ -155,5 +164,71 @@ describe('カレンダーとパレット', () => {
     const sheet = screen.getByRole('dialog');
     expect(within(sheet).getByText('夜おそい')).toBeInTheDocument();
     expect(data.addStamps).not.toHaveBeenCalled();
+  });
+
+  it('何も選ばずにスタンプのある日をタップすると、その日の一覧が大きく出る', () => {
+    const room = makeRoom({
+      stamps: {
+        [today]: {
+          s1: { emoji: '🏠', label: '家', uid: 'u2', userName: 'ハナ', ts: 1, memo: '夜おそい' },
+          s2: { emoji: '🍽️', label: 'ごはん', uid: 'u1', userName: 'トシ', ts: 2 },
+        },
+      },
+    });
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    fireEvent.click(screen.getByRole('button', { name: todayLabel }));
+    const list = screen.getByRole('dialog', { name: `${todayLabel}のスタンプ` });
+    expect(within(list).getByRole('button', { name: /🏠 家 ハナ/ })).toBeInTheDocument();
+    expect(within(list).getByText('夜おそい')).toBeInTheDocument();
+    expect(within(list).getByRole('button', { name: /🍽️ ごはん トシ/ })).toBeInTheDocument();
+    expect(screen.queryByText('下のスタンプを選んでください')).not.toBeInTheDocument();
+    expect(data.addStamps).not.toHaveBeenCalled();
+  });
+
+  it('一覧の行をタップすると、そのスタンプのシートが開く', () => {
+    const room = makeRoom({
+      stamps: { [today]: { s1: { emoji: '🏠', label: '家', uid: 'u1', userName: 'トシ', ts: 1 } } },
+    });
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    fireEvent.click(screen.getByRole('button', { name: todayLabel }));
+    fireEvent.click(screen.getByRole('button', { name: /🏠 家 トシ/ }));
+    expect(screen.queryByRole('dialog', { name: `${todayLabel}のスタンプ` })).not.toBeInTheDocument();
+    const sheet = screen.getByRole('dialog', { name: '🏠 家' });
+    expect(within(sheet).getByRole('button', { name: '削除' })).toBeInTheDocument();
+  });
+
+  it('つながっていないときは案内を出し、つながったら消す', () => {
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    expect(screen.queryByText(/オフライン中/)).not.toBeInTheDocument();
+    setConnected(false);
+    expect(screen.getByText('⚠️ オフライン中 — 変更はつながったときに反映されます')).toBeInTheDocument();
+    setConnected(true);
+    expect(screen.queryByText(/オフライン中/)).not.toBeInTheDocument();
+  });
+
+  it('つながっていないときに押すと、返事を待たずに案内する', async () => {
+    vi.mocked(data.addStamps).mockReturnValue(new Promise(() => {})); // 返事が来ない
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    setConnected(false);
+    fireEvent.click(screen.getByRole('button', { name: '🏠 家' }));
+    fireEvent.click(screen.getByRole('button', { name: todayLabel }));
+    expect(
+      await screen.findByText(`🏠を${tm}/${td}に押しました（つながったときに反映されます）`),
+    ).toBeInTheDocument();
+  });
+
+  it('つながっていないときのシートの削除は、返事を待たずに閉じる', async () => {
+    vi.mocked(data.deleteStamp).mockReturnValue(new Promise(() => {}));
+    const room = makeRoom({
+      stamps: { [today]: { s1: { emoji: '🏠', label: '家', uid: 'u1', userName: 'トシ', ts: 1 } } },
+    });
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    setConnected(false);
+    fireEvent.click(screen.getByRole('button', { name: '🏠 家（トシ）' }));
+    fireEvent.click(screen.getByRole('button', { name: '削除' }));
+    fireEvent.click(screen.getByRole('button', { name: '削除する' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.getByText('削除しました（つながったときに反映されます）')).toBeInTheDocument();
+    expect(data.deleteStamp).toHaveBeenCalledWith(db, 'r1', today, 's1');
   });
 });

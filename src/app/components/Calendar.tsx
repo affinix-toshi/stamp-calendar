@@ -17,6 +17,11 @@ export function personName(room: RoomSnapshot, entry: { uid: string; userName: s
   return room.members[entry.uid]?.name ?? entry.userName;
 }
 
+/** ある1日のスタンプ一覧（くり返しを含む） */
+export function dayEntries(room: RoomSnapshot, date: DateKey): DayEntry[] {
+  return mergeDay(room.stamps[date], expandRepeats(room.repeats, date, date), date);
+}
+
 export function Calendar({ room, uid, onTapDay, onTapEntry }: Props) {
   const today = todayKey();
   const [ty, tm] = today.split('-').map(Number);
