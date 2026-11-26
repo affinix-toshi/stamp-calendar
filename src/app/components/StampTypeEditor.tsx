@@ -77,6 +77,12 @@ export function StampTypeEditor({ db, roomId, stampTypes, online = true, onClose
       setError(problem);
       return;
     }
+    if (typeId && !stampTypes[typeId]) {
+      // 開いている間に、ほかの人が消していた
+      onMessage('このスタンプは削除されました');
+      setMode({ kind: 'list' });
+      return;
+    }
     const order = typeId
       ? stampTypes[typeId].order
       : sorted.length === 0

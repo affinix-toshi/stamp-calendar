@@ -24,9 +24,9 @@ const FEED = `${location.origin}/feed/r1/TOK456.ics`;
 const INVITE = `${location.origin}/join/r1/INV123`;
 const CONFIRM = '今のURLは使えなくなります。作り直しますか？';
 
-function renderSheet() {
+function renderSheet(online = true) {
   const p = { onClose: vi.fn(), onMessage: vi.fn(), onEditStamps: vi.fn(), onSignOut: vi.fn() };
-  render(<SettingsSheet db={db} roomId="r1" room={room} uid="u1" {...p} />);
+  render(<SettingsSheet db={db} roomId="r1" room={room} uid="u1" online={online} {...p} />);
   return p;
 }
 
@@ -116,5 +116,22 @@ describe('設定シート', () => {
     expect(p.onEditStamps).toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'ログアウト' }));
     expect(p.onSignOut).toHaveBeenCalled();
+  });
+
+  it('オフラインでは作り直せない（理由を書く）', () => {
+    renderSheet(false);
+    expect(screen.getByRole('button', { name: '招待URLを作り直す' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '購読URLを作り直す' })).toBeDisabled();
+    expect(screen.getAllByText('インターネットにつながっているときに作り直せます').length).toBe(2);
+    expect(screen.getByRole('button', { name: '招待URLをコピー' })).toBeEnabled();
+  });
+
+  it('オフラインでも表示名は返事を待たずに保存を進める', async () => {
+    vi.mocked(data.updateDisplayName).mockReturnValue(new Promise(() => {})); // 返事が来ない
+    const { onMessage } = renderSheet(false);
+    fireEvent.change(screen.getByLabelText('表示名'), { target: { value: 'とし' } });
+    fireEvent.click(screen.getByRole('button', { name: '名前を保存' }));
+    await waitFor(() => expect(onMessage).toHaveBeenCalledWith(expect.stringContaining('つながったときに反映されます')));
+    expect(screen.getByRole('button', { name: '名前を保存' })).toBeEnabled();
   });
 });

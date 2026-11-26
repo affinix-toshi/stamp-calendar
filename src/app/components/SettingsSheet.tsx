@@ -3,7 +3,7 @@ import type { Database } from 'firebase/database';
 import { checkDisplayName } from '../../shared/validate';
 import { regenerateFeedToken, regenerateInvite, updateDisplayName } from '../data';
 import type { RoomSnapshot } from '../data';
-import { writeFailed } from '../format';
+import { OFFLINE_NOTE, writeFailed } from '../format';
 import { Sheet } from './Sheet';
 
 interface Props {
@@ -11,6 +11,8 @@ interface Props {
   roomId: string;
   room: RoomSnapshot;
   uid: string;
+  /** サーバーとつながっているか */
+  online?: boolean;
   onClose: () => void;
   onMessage: (message: string) => void;
   onEditStamps: () => void;
@@ -21,7 +23,7 @@ const CONFIRM_TEXT = '今のURLは使えなくなります。作り直します�
 
 type UrlKind = 'invite' | 'feed';
 
-export function SettingsSheet({ db, roomId, room, uid, onClose, onMessage, onEditStamps, onSignOut }: Props) {
+export function SettingsSheet({ db, roomId, room, uid, online = true, onClose, onMessage, onEditStamps, onSignOut }: Props) {
   const savedName = room.members[uid]?.name ?? '';
   const [name, setName] = useState(savedName);
   const [nameError, setNameError] = useState('');
@@ -42,6 +44,14 @@ export function SettingsSheet({ db, roomId, room, uid, onClose, onMessage, onEdi
       return;
     }
     setNameError('');
+    if (!online) {
+      // つながっていないと返事が来ないので待たない（画面には先に反映される）
+      updateDisplayName(db, roomId, uid, name.trim()).catch((e) =>
+        onMessage(writeFailed('表示名を変えられませんでした', e)),
+      );
+      onMessage('表示名を変えました' + OFFLINE_NOTE);
+      return;
+    }
     setBusy(true);
     try {
       await updateDisplayName(db, roomId, uid, name.trim());
@@ -88,7 +98,7 @@ export function SettingsSheet({ db, roomId, room, uid, onClose, onMessage, onEdi
               <button type="button" className="btn btn-soft" onClick={() => setConfirming(null)}>
                 やめる
               </button>
-              <button type="button" className="btn btn-danger" disabled={busy} onClick={() => void regenerate(kind)}>
+              <button type="button" className="btn btn-danger" disabled={busy || !online} onClick={() => void regenerate(kind)}>
                 作り直す
               </button>
             </div>
@@ -98,11 +108,17 @@ export function SettingsSheet({ db, roomId, room, uid, onClose, onMessage, onEdi
             <button type="button" className="btn btn-primary" onClick={() => void copy(kind)}>
               {noun}をコピー
             </button>
-            <button type="button" className="btn btn-soft" onClick={() => setConfirming(kind)}>
+            <button
+              type="button"
+              className="btn btn-soft"
+              disabled={!online}
+              onClick={() => setConfirming(kind)}
+            >
               {noun}を作り直す
             </button>
           </div>
         )}
+        {!online && <p className="settings-note">インターネットにつながっているときに作り直せます</p>}
         {showUrl === kind && (
           <input
             className="field-input url-box"

@@ -176,6 +176,7 @@ export function RoomScreen({ db, roomId, room, user, onSignOut }: Props) {
           roomId={roomId}
           room={room}
           uid={user.uid}
+          online={online}
           onClose={closePanel}
           onMessage={showToast}
           onEditStamps={() => setPanel('editor')}

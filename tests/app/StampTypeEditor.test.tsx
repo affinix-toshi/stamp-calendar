@@ -114,4 +114,19 @@ describe('スタンプの編集', () => {
     fireEvent.click(screen.getByRole('button', { name: '保存' }));
     await waitFor(() => expect(onMessage).toHaveBeenCalledWith(expect.stringContaining('保存できませんでした')));
   });
+
+  it('開いている間に他の人が消したスタンプを保存しようとしても、落ちずに知らせる', async () => {
+    const { rerender } = render(
+      <StampTypeEditor db={db} roomId="r1" stampTypes={types} onClose={vi.fn()} onMessage={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '編集：ごはん' }));
+    const { t2: _gone, ...rest } = types;
+    void _gone;
+    const onMessage = vi.fn();
+    rerender(<StampTypeEditor db={db} roomId="r1" stampTypes={rest} onClose={vi.fn()} onMessage={onMessage} />);
+    fireEvent.click(screen.getByRole('button', { name: '保存' }));
+    expect(onMessage).toHaveBeenCalledWith('このスタンプは削除されました');
+    expect(data.saveStampType).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'スタンプを追加' })).toBeInTheDocument();
+  });
 });
