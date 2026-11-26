@@ -10,6 +10,12 @@ vi.mock('../../src/app/data', () => ({
   skipRepeatDate: vi.fn(),
   endRepeatFrom: vi.fn(),
   subscribeConnected: vi.fn(),
+  saveStampType: vi.fn(),
+  deleteStampType: vi.fn(),
+  reorderStampTypes: vi.fn(),
+  updateDisplayName: vi.fn(),
+  regenerateInvite: vi.fn(),
+  regenerateFeedToken: vi.fn(),
 }));
 
 import * as data from '../../src/app/data';
@@ -60,7 +66,7 @@ afterEach(() => {
 
 describe('カレンダーとパレット', () => {
   it('パレットで2つ選んで日付をタップすると、その日付と2種類で addStamps を呼ぶ', async () => {
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: '🏠 家' }));
     fireEvent.click(screen.getByRole('button', { name: '🍽️ ごはん' }));
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
@@ -81,14 +87,14 @@ describe('カレンダーとパレット', () => {
   });
 
   it('何も選ばずにスタンプのない日をタップすると「下のスタンプを選んでください」と出る', () => {
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
     expect(screen.getByText('下のスタンプを選んでください')).toBeInTheDocument();
     expect(data.addStamps).not.toHaveBeenCalled();
   });
 
   it('もう一度タップすると選択が外れる', () => {
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     const home = screen.getByRole('button', { name: '🏠 家' });
     fireEvent.click(home);
     expect(home).toHaveAttribute('aria-pressed', 'true');
@@ -105,7 +111,7 @@ describe('カレンダーとパレット', () => {
         },
       },
     });
-    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
     const cell = screen.getByRole('button', { name: todayLabel }).parentElement!;
     expect(within(cell).getByText('ハナ')).toBeInTheDocument();
     expect(within(cell).queryByText('旧名')).not.toBeInTheDocument();
@@ -122,7 +128,7 @@ describe('カレンダーとパレット', () => {
         },
       },
     });
-    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
     const cell = screen.getByRole('button', { name: todayLabel }).parentElement!;
     expect(within(cell).getByRole('button', { name: '🏃 運動（ハナ）' })).toBeInTheDocument();
   });
@@ -130,7 +136,7 @@ describe('カレンダーとパレット', () => {
   it('書き込みに失敗したら、元のエラー文は出さず日本語で知らせる', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(data.addStamps).mockRejectedValue(new Error('PERMISSION_DENIED: Permission denied'));
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: '🏠 家' }));
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
     expect(
@@ -141,24 +147,18 @@ describe('カレンダーとパレット', () => {
   });
 
   it('月を切り替えられる', () => {
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: '次の月' }));
     expect(screen.queryByRole('button', { name: todayLabel })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '今日' }));
     expect(screen.getByRole('button', { name: todayLabel })).toBeInTheDocument();
   });
 
-  it('「＋」はまだ使えないことを知らせる', () => {
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
-    fireEvent.click(screen.getByRole('button', { name: 'スタンプを追加' }));
-    expect(screen.getByText('スタンプの追加は次の更新で使えます')).toBeInTheDocument();
-  });
-
   it('スタンプをタップするとシートが開く（日付には押さない）', () => {
     const room = makeRoom({
       stamps: { [today]: { s1: { emoji: '🏠', label: '家', uid: 'u2', userName: 'ハナ', ts: 1, memo: '夜おそい' } } },
     });
-    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: '🏠 家' }));
     fireEvent.click(screen.getByRole('button', { name: '🏠 家（ハナ）' }));
     const sheet = screen.getByRole('dialog');
@@ -175,7 +175,7 @@ describe('カレンダーとパレット', () => {
         },
       },
     });
-    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
     const list = screen.getByRole('dialog', { name: `${todayLabel}のスタンプ` });
     expect(within(list).getByRole('button', { name: /🏠 家 ハナ/ })).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe('カレンダーとパレット', () => {
     const room = makeRoom({
       stamps: { [today]: { s1: { emoji: '🏠', label: '家', uid: 'u1', userName: 'トシ', ts: 1 } } },
     });
-    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
     fireEvent.click(screen.getByRole('button', { name: /🏠 家 トシ/ }));
     expect(screen.queryByRole('dialog', { name: `${todayLabel}のスタンプ` })).not.toBeInTheDocument();
@@ -198,7 +198,7 @@ describe('カレンダーとパレット', () => {
   });
 
   it('つながっていないときは案内を出し、つながったら消す', () => {
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     expect(screen.queryByText(/オフライン中/)).not.toBeInTheDocument();
     setConnected(false);
     expect(screen.getByText('⚠️ オフライン中 — 変更はつながったときに反映されます')).toBeInTheDocument();
@@ -208,7 +208,7 @@ describe('カレンダーとパレット', () => {
 
   it('つながっていないときに押すと、返事を待たずに案内する', async () => {
     vi.mocked(data.addStamps).mockReturnValue(new Promise(() => {})); // 返事が来ない
-    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={() => {}} />);
     setConnected(false);
     fireEvent.click(screen.getByRole('button', { name: '🏠 家' }));
     fireEvent.click(screen.getByRole('button', { name: todayLabel }));
@@ -222,7 +222,7 @@ describe('カレンダーとパレット', () => {
     const room = makeRoom({
       stamps: { [today]: { s1: { emoji: '🏠', label: '家', uid: 'u1', userName: 'トシ', ts: 1 } } },
     });
-    render(<RoomScreen db={db} roomId="r1" room={room} user={user} />);
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
     setConnected(false);
     fireEvent.click(screen.getByRole('button', { name: '🏠 家（トシ）' }));
     fireEvent.click(screen.getByRole('button', { name: '削除' }));
@@ -230,5 +230,46 @@ describe('カレンダーとパレット', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByText('削除しました（つながったときに反映されます）')).toBeInTheDocument();
     expect(data.deleteStamp).toHaveBeenCalledWith(db, 'r1', today, 's1');
+  });
+});
+
+describe('日の一覧と設定', () => {
+  const stampRoom = (withStamp: boolean) =>
+    makeRoom({
+      stamps: withStamp ? { [today]: { s1: { emoji: '🏠', label: '家', uid: 'u2', userName: 'ハナ', ts: 1 } } } : {},
+    });
+
+  it('一覧を開いたまま日のスタンプが0件になっても、あとで追加されたときに勝手に開かない', () => {
+    const { rerender } = render(
+      <RoomScreen db={db} roomId="r1" room={stampRoom(true)} user={user} onSignOut={() => {}} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: todayLabel }));
+    expect(screen.getByRole('dialog', { name: `${todayLabel}のスタンプ` })).toBeInTheDocument();
+    rerender(<RoomScreen db={db} roomId="r1" room={stampRoom(false)} user={user} onSignOut={() => {}} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    rerender(<RoomScreen db={db} roomId="r1" room={stampRoom(true)} user={user} onSignOut={() => {}} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('スタンプの種類を削除しても、過去に押したスタンプは表示に残る', () => {
+    const room = stampRoom(true);
+    room.stampTypes = {}; // 種類は消えたが、スタンプ側に写しがある
+    render(<RoomScreen db={db} roomId="r1" room={room} user={user} onSignOut={() => {}} />);
+    const cell = screen.getByRole('button', { name: todayLabel }).parentElement!;
+    expect(within(cell).getByRole('button', { name: '🏠 家（ハナ）' })).toBeInTheDocument();
+  });
+
+  it('⚙️ 設定から設定シートを開き、スタンプの編集へ進める。パレットの＋でも編集が開く', () => {
+    const onSignOut = vi.fn();
+    render(<RoomScreen db={db} roomId="r1" room={makeRoom()} user={user} onSignOut={onSignOut} />);
+    fireEvent.click(screen.getByRole('button', { name: '⚙️ 設定' }));
+    expect(screen.getByRole('dialog', { name: '設定' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'ログアウト' }));
+    expect(onSignOut).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'スタンプの編集' }));
+    expect(screen.getByRole('dialog', { name: 'スタンプの編集' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '閉じる' }));
+    fireEvent.click(screen.getByRole('button', { name: 'スタンプを追加' }));
+    expect(screen.getByRole('dialog', { name: 'スタンプの編集' })).toBeInTheDocument();
   });
 });

@@ -43,7 +43,7 @@ describe('RoomGate hardening', () => {
     vi.mocked(data.joinRoom).mockResolvedValue();
     render(
       <StrictMode>
-        <RoomGate db={db} user={user} route={{ name: 'join', roomId: 'r5', code: 'C' }} />
+        <RoomGate db={db} user={user} route={{ name: 'join', roomId: 'r5', code: 'C' }} onSignOut={() => {}} />
       </StrictMode>,
     );
     expect(await screen.findByText('わが家')).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('RoomGate hardening', () => {
   it('join が失敗でも、実はルームに入れていれば成功として開く', async () => {
     vi.mocked(data.listMyRooms).mockResolvedValueOnce([]).mockResolvedValue(['r6']);
     vi.mocked(data.joinRoom).mockRejectedValue(new Error('x'));
-    render(<RoomGate db={db} user={user} route={{ name: 'join', roomId: 'r6', code: 'C' }} />);
+    render(<RoomGate db={db} user={user} route={{ name: 'join', roomId: 'r6', code: 'C' }} onSignOut={() => {}} />);
     expect(await screen.findByText('わが家')).toBeInTheDocument();
   });
 
@@ -62,7 +62,7 @@ describe('RoomGate hardening', () => {
     vi.mocked(data.listMyRooms).mockResolvedValue([]);
     vi.mocked(data.joinRoom).mockRejectedValue(new Error('x'));
     window.history.pushState({}, '', '/join/r7/BAD');
-    render(<RoomGate db={db} user={user} route={{ name: 'join', roomId: 'r7', code: 'BAD' }} />);
+    render(<RoomGate db={db} user={user} route={{ name: 'join', roomId: 'r7', code: 'BAD' }} onSignOut={() => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: 'はじめの画面にもどる' }));
     expect(await screen.findByText('招待URLをもらってください')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/');
@@ -75,7 +75,7 @@ describe('RoomGate hardening', () => {
       onError?.(new Error('permission_denied'));
       return () => {};
     });
-    render(<RoomGate db={db} user={user} route={home} />);
+    render(<RoomGate db={db} user={user} route={home} onSignOut={() => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: 'はじめの画面にもどる' }));
     expect(await screen.findByText('招待URLをもらってください')).toBeInTheDocument();
   });
@@ -84,7 +84,7 @@ describe('RoomGate hardening', () => {
     vi.mocked(data.listMyRooms).mockResolvedValue([]);
     let resolve!: (id: string) => void;
     vi.mocked(data.createRoom).mockReturnValue(new Promise<string>((r) => (resolve = r)));
-    render(<RoomGate db={db} user={user} route={home} />);
+    render(<RoomGate db={db} user={user} route={home} onSignOut={() => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: '家族のルームを作る' }));
     const btn = screen.getByRole('button', { name: '作る' });
     fireEvent.click(btn);
@@ -98,7 +98,7 @@ describe('RoomGate hardening', () => {
   it('空の名前は「わが家」にする', async () => {
     vi.mocked(data.listMyRooms).mockResolvedValue([]);
     vi.mocked(data.createRoom).mockResolvedValue('n2');
-    render(<RoomGate db={db} user={user} route={home} />);
+    render(<RoomGate db={db} user={user} route={home} onSignOut={() => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: '家族のルームを作る' }));
     fireEvent.change(screen.getByLabelText('ルームの名前'), { target: { value: '   ' } });
     fireEvent.click(screen.getByRole('button', { name: '作る' }));
@@ -110,7 +110,7 @@ describe('RoomGate hardening', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(data.listMyRooms).mockResolvedValue([]);
     vi.mocked(data.createRoom).mockRejectedValue(new Error('boom internal'));
-    render(<RoomGate db={db} user={user} route={home} />);
+    render(<RoomGate db={db} user={user} route={home} onSignOut={() => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: '家族のルームを作る' }));
     fireEvent.click(screen.getByRole('button', { name: '作る' }));
     expect(await screen.findByText('ルームを作れませんでした。もう一度ためしてください。')).toBeInTheDocument();

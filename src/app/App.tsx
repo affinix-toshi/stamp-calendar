@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getRedirectResult, onAuthStateChanged, type User } from 'firebase/auth';
+import { getRedirectResult, onAuthStateChanged, signOut, type User } from 'firebase/auth';
 import { getFirebase } from './firebase';
 import { parseRoute, type Route } from './router';
 import { toUserInfo } from './auth';
 import { LoginScreen } from './components/LoginScreen';
+import { InstallGuide } from './components/InstallGuide';
 import { RoomGate } from './components/RoomGate';
 
 export function App() {
@@ -30,5 +31,10 @@ function FamilyApp({ route }: { route: Route }) {
 
   if (user === undefined) return <p className="loading">読み込み中…</p>;
   if (user === null || !info) return <LoginScreen auth={auth} notice={redirectError} />;
-  return <RoomGate db={db} user={info} route={route} />;
+  return (
+    <>
+      <RoomGate db={db} user={info} route={route} onSignOut={() => void signOut(auth)} />
+      <InstallGuide />
+    </>
+  );
 }

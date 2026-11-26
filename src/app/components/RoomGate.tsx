@@ -10,6 +10,7 @@ interface Props {
   db: Database;
   user: UserInfo;
   route: Route;
+  onSignOut: () => void;
 }
 
 const MSG_JOIN_FAILED = '招待URLが古いか、まちがっています。もう一度もらってください。';
@@ -48,7 +49,7 @@ type Phase =
   | { kind: 'error'; message: string }
   | { kind: 'open'; roomId: string };
 
-export function RoomGate({ db, user, route }: Props) {
+export function RoomGate({ db, user, route, onSignOut }: Props) {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
   const [roomError, setRoomError] = useState(false);
@@ -153,7 +154,7 @@ export function RoomGate({ db, user, route }: Props) {
   if (phase.kind === 'open') {
     if (roomError) return errorView(MSG_CANNOT_OPEN);
     if (!room) return <p className="loading">読み込み中…</p>;
-    return <RoomScreen db={db} roomId={phase.roomId} room={room} user={user} />;
+    return <RoomScreen db={db} roomId={phase.roomId} room={room} user={user} onSignOut={onSignOut} />;
   }
 
   return (

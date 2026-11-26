@@ -7,7 +7,9 @@ import { OFFLINE_NOTE, shortDate, writeFailed } from '../format';
 import { Calendar, dayEntries, personName } from './Calendar';
 import { DaySheet } from './DaySheet';
 import { Palette } from './Palette';
+import { SettingsSheet } from './SettingsSheet';
 import { StampSheet } from './StampSheet';
+import { StampTypeEditor } from './StampTypeEditor';
 import { Toast } from './Toast';
 
 interface Props {
@@ -15,6 +17,7 @@ interface Props {
   roomId: string;
   room: RoomSnapshot;
   user: UserInfo;
+  onSignOut: () => void;
 }
 
 const TOAST_MS = 2800;
@@ -49,10 +52,11 @@ function useOnline(db: Database): boolean {
   return online;
 }
 
-export function RoomScreen({ db, roomId, room, user }: Props) {
+export function RoomScreen({ db, roomId, room, user, onSignOut }: Props) {
   const [selected, setSelected] = useState<string[]>([]);
   const [openEntry, setOpenEntry] = useState<DayEntry | null>(null);
   const [openDay, setOpenDay] = useState<DateKey | null>(null);
+  const [panel, setPanel] = useState<'settings' | 'editor' | null>(null);
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const toastSeq = useRef(0);
@@ -101,12 +105,23 @@ export function RoomScreen({ db, roomId, room, user }: Props) {
 
   const closeSheet = useCallback(() => setOpenEntry(null), []);
   const closeDay = useCallback(() => setOpenDay(null), []);
+  const closePanel = useCallback(() => setPanel(null), []);
   const openDayEntries = openDay ? dayEntries(room, openDay) : [];
+  const openDayEmpty = openDay !== null && openDayEntries.length === 0;
+
+  // 開いていた日のスタンプが0件になったら、その日の一覧は閉じた扱いにする
+  // （残しておくと、あとでその日にスタンプが増えたときに勝手に開いてしまう）
+  useEffect(() => {
+    if (openDayEmpty) setOpenDay(null);
+  }, [openDayEmpty]);
 
   return (
     <main className="room-screen">
       <header className="room-header">
         <h1 className="room-name">{room.meta.name}</h1>
+        <button type="button" className="room-settings-btn" onClick={() => setPanel('settings')}>
+          ⚙️ 設定
+        </button>
       </header>
 
       {!online && (
@@ -121,7 +136,7 @@ export function RoomScreen({ db, roomId, room, user }: Props) {
         stampTypes={room.stampTypes}
         selected={live}
         onToggle={toggle}
-        onAdd={() => showToast('スタンプの追加は次の更新で使えます')}
+        onAdd={() => setPanel('editor')}
       />
 
       {openDay && openDayEntries.length > 0 && (
@@ -151,6 +166,30 @@ export function RoomScreen({ db, roomId, room, user }: Props) {
             openEntry.source.kind === 'repeat' ? room.repeats[openEntry.source.id]?.weekdays : undefined
           }
           onClose={closeSheet}
+          onMessage={showToast}
+        />
+      )}
+
+      {panel === 'settings' && (
+        <SettingsSheet
+          db={db}
+          roomId={roomId}
+          room={room}
+          uid={user.uid}
+          onClose={closePanel}
+          onMessage={showToast}
+          onEditStamps={() => setPanel('editor')}
+          onSignOut={onSignOut}
+        />
+      )}
+
+      {panel === 'editor' && (
+        <StampTypeEditor
+          db={db}
+          roomId={roomId}
+          stampTypes={room.stampTypes}
+          online={online}
+          onClose={closePanel}
           onMessage={showToast}
         />
       )}
