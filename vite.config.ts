@@ -5,8 +5,24 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 export default defineConfig(({ mode }) => ({
   plugins: [react(), ...(mode === "test" ? [] : [cloudflare()])],
   test: {
-    include: ["tests/**/*.test.{ts,tsx}"],
-    environment: "node",
-    environmentMatchGlobs: [["tests/app/**", "jsdom"]],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "node",
+          environment: "node",
+          include: ["tests/**/*.test.{ts,tsx}"],
+          exclude: ["tests/app/**"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "app",
+          environment: "jsdom",
+          include: ["tests/app/**/*.test.{ts,tsx}"],
+        },
+      },
+    ],
   },
 }));
