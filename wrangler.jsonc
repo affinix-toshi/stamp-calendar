@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stamp-calendar",
+  "compatibility_date": "2026-11-01",
+  "main": "src/worker/index.ts",
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/feed/*", "/api/*"]
+  }
+}
