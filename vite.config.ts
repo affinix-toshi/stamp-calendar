@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => ({
           name: "node",
           environment: "node",
           include: ["tests/**/*.test.{ts,tsx}"],
-          exclude: ["tests/app/**", "tests/rules/**"],
+          exclude: ["tests/app/**", "tests/rules/**", "tests/data/**"],
         },
       },
       {
@@ -30,6 +30,17 @@ export default defineConfig(({ mode }) => ({
           name: "rules",
           environment: "node",
           include: ["tests/rules/**/*.test.ts"],
+          testTimeout: 20000,
+          hookTimeout: 20000,
+        },
+      },
+      {
+        // Auth と Database のエミュレーターが必要。npm run test:data からだけ動かす
+        extends: true,
+        test: {
+          name: "data",
+          environment: "node",
+          include: ["tests/data/**/*.test.ts"],
           testTimeout: 20000,
           hookTimeout: 20000,
         },
