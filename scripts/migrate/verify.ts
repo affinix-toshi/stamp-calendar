@@ -18,12 +18,27 @@ export interface VerifyResult {
 
 const FIELDS = ['emoji', 'label', 'ts'] as const;
 
-export function compareRooms(old: OldRoom | null, v2: V2Stamps | null): VerifyResult {
+/**
+ * map（旧ユーザーID → 新しいuid）を渡すと、押した人（uid）も比べる。
+ * 旧ルームに写せるスタンプが1件もないときは、ルームコードの間違いとみなして NG にする。
+ */
+export function compareRooms(
+  old: OldRoom | null,
+  v2: V2Stamps | null,
+  map?: Record<string, string>,
+): VerifyResult {
   const empty = { perDate: [], missing: [], altered: [], extra: 0, skipped: [] };
   if (!old || typeof old !== 'object')
     return { ok: false, error: '旧ルームが見つかりません。ルームコードを確かめてください', ...empty };
 
   const { valid, skipped } = readOldStamps(old);
+  if (valid.length === 0)
+    return {
+      ok: false,
+      error: '旧ルームにスタンプが見つかりません。ルームコードを確かめてください',
+      ...empty,
+      skipped,
+    };
   const v2Days: V2Stamps = v2 && typeof v2 === 'object' ? v2 : {};
 
   const byDate = new Map<string, string[]>();
@@ -57,7 +72,9 @@ export function compareRooms(old: OldRoom | null, v2: V2Stamps | null): VerifyRe
       }
       found++;
       const o = oldById.get(`${date}/${id}`)!.stamp;
-      const diff = FIELDS.filter((f) => n[f] !== o[f]);
+      const diff: string[] = FIELDS.filter((f) => n[f] !== o[f]);
+      if (map && n.uid !== (Object.prototype.hasOwnProperty.call(map, o.userId) ? map[o.userId] : undefined))
+        diff.push('uid');
       if (diff.length > 0) altered.push({ date, id, fields: [...diff] });
     }
     perDate.push({ date, old: oldIds.length, found, extra: extraHere });
@@ -70,6 +87,7 @@ export function formatVerify(r: VerifyResult): string[] {
   const lines: string[] = [];
   if (r.error) {
     lines.push('エラー: ' + r.error);
+    lines.push(...formatSkipped(r.skipped));
     lines.push('NG');
     return lines;
   }

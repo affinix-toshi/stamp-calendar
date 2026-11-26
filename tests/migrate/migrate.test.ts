@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { planMigration, runMigration, parseUserMap, type MigrationIO } from '../../scripts/migrate/migrate';
+import { planMigration, runMigration, parseUserMap, resolveDryRun, describeError, type MigrationIO } from '../../scripts/migrate/migrate';
 import type { OldRoom } from '../../scripts/migrate/transform';
 import { oldRoomFixture, MAP, MEMBERS } from './fixtures';
 
@@ -83,6 +83,24 @@ describe('planMigration', () => {
     expect(p.total).toBe(4);
   });
 
+  it('すでにあるスタンプの持ち主（uid・表示名）が対応表とちがえば「持ち主がちがうスタンプ」として出す', () => {
+    const existing = {
+      '2026-04-01': {
+        '-Np001': { emoji: '🍳', label: 'ごはん', uid: 'uidMama', userName: 'ゆかり', ts: 1775000000001 },
+        '-Np002': { emoji: '🛁', label: 'おふろ', uid: 'uidMama', userName: 'ゆかり', ts: 1775000000002 },
+      },
+      '2026-04-15': {
+        '-Np003': { emoji: '🧹', label: 'そうじ', uid: 'uidToshi', userName: 'トシ(古い名前)', ts: 1776000000003 },
+      },
+    };
+    const p = planMigration({ old: oldRoomFixture(), map: MAP, members: MEMBERS, existing });
+    expect(p.ok).toBe(true);
+    if (!p.ok) return;
+    expect(p.alreadyThere).toBe(3);
+    expect(p.ownerMismatch).toEqual(['stamps/2026-04-01/-Np001', 'stamps/2026-04-15/-Np003']);
+    expect(Object.keys(p.writes)).toEqual(['stamps/2026-05-02/-Np004']);
+  });
+
   it('書き込みはすべて stamps/ の下の1件ずつのパス（stamps 全体を置きかえない）', () => {
     const p = planMigration({ old: oldRoomFixture(), map: MAP, members: MEMBERS, existing: null });
     for (const path of Object.keys(p.writes)) {
@@ -138,6 +156,25 @@ describe('runMigration', () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it('お試しのときは「--write を付けると本当に書き込みます」と出す', async () => {
+    const { io } = fakeIO();
+    const lines: string[] = [];
+    await runMigration(io, { from: 'ABCDE', to: 'room1', map: MAP, dryRun: true }, (l) => lines.push(l));
+    expect(lines.join('\n')).toContain('--write を付けると本当に書き込みます');
+  });
+
+  it('持ち主がちがうスタンプがあれば、件数と場所を表示する', async () => {
+    const existing = {
+      '2026-04-01': { '-Np001': { emoji: '🍳', label: 'ごはん', uid: 'uidMama', userName: 'ゆかり', ts: 1775000000001 } },
+    };
+    const { io } = fakeIO({ existing });
+    const lines: string[] = [];
+    await runMigration(io, { from: 'ABCDE', to: 'room1', map: MAP, dryRun: true }, (l) => lines.push(l));
+    const out = lines.join('\n');
+    expect(out).toContain('持ち主がちがうスタンプ: 1 件');
+    expect(out).toContain('v2/rooms/room1/stamps/2026-04-01/-Np001');
+  });
+
   it('2回目（すべて写し済み）は何も書かない', async () => {
     const first = planMigration({ old: oldRoomFixture(), map: MAP, members: MEMBERS, existing: null });
     const existing: Record<string, Record<string, unknown>> = {};
@@ -149,6 +186,37 @@ describe('runMigration', () => {
     const code = await runMigration(io, { from: 'ABCDE', to: 'room1', map: MAP, dryRun: false }, quiet);
     expect(code).toBe(0);
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveDryRun', () => {
+  it('--write がなければお試し', () => {
+    expect(resolveDryRun({ write: false, dryRun: false }, {})).toBe(true);
+  });
+  it('--write があれば本当に書く', () => {
+    expect(resolveDryRun({ write: true, dryRun: false }, {})).toBe(false);
+  });
+  it('--write と --dry-run の両方があればお試し', () => {
+    expect(resolveDryRun({ write: true, dryRun: true }, {})).toBe(true);
+  });
+  it('npm に --dry-run を渡した（npm_config_dry_run=true）ときはお試し', () => {
+    expect(resolveDryRun({ write: true, dryRun: false }, { npm_config_dry_run: 'true' })).toBe(true);
+    expect(resolveDryRun({ write: true, dryRun: false }, { npm_config_dry_run: '' })).toBe(false);
+  });
+});
+
+describe('describeError', () => {
+  it('同じ名前のバックアップ（EEXIST）は、待ってからやり直す案内にする', () => {
+    const e = Object.assign(new Error('EEXIST: file already exists'), { code: 'EEXIST' });
+    const lines = describeError(e);
+    expect(lines[0]).toBe('エラー: 同じ名前のバックアップがあります。1分待ってからもう一度');
+    expect(lines[1]).toContain('EEXIST');
+  });
+  it('ほかのエラーは短い日本語＋元のエラーの2行', () => {
+    const lines = describeError(new Error('PERMISSION_DENIED'));
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toMatch(/^エラー: /);
+    expect(lines[1]).toContain('PERMISSION_DENIED');
   });
 });
 

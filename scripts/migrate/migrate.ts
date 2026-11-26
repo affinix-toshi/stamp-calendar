@@ -16,6 +16,11 @@ export type Plan =
       total: number;
       /** 新しい側に同じIDがすでにあるので書かないものの数 */
       alreadyThere: number;
+      /**
+       * すでにあるスタンプのうち、持ち主（uid か表示名）が今回の対応表とちがうものの場所。
+       * 再実行では直らない（上書きしない）ので、件数と場所を知らせる
+       */
+      ownerMismatch: string[];
       skipped: Skipped[];
     }
   | {
@@ -54,12 +59,17 @@ export function planMigration(input: {
   const perMonth: Record<string, number> = {};
   let total = 0;
   let alreadyThere = 0;
+  const ownerMismatch: string[] = [];
   for (const date of Object.keys(r.stamps).sort()) {
     for (const id of Object.keys(r.stamps[date]).sort()) {
       total++;
       const day = existing?.[date];
       if (day && typeof day === 'object' && Object.prototype.hasOwnProperty.call(day, id) && day[id] != null) {
         alreadyThere++;
+        const cur = day[id] as Record<string, unknown>;
+        const want = r.stamps[date][id];
+        if (typeof cur !== 'object' || cur.uid !== want.uid || cur.userName !== want.userName)
+          ownerMismatch.push(`stamps/${date}/${id}`);
         continue;
       }
       writes[`stamps/${date}/${id}`] = r.stamps[date][id];
@@ -67,7 +77,7 @@ export function planMigration(input: {
       perMonth[month] = (perMonth[month] ?? 0) + 1;
     }
   }
-  return { ok: true, writes, perMonth, total, alreadyThere, skipped: r.skipped };
+  return { ok: true, writes, perMonth, total, alreadyThere, ownerMismatch, skipped: r.skipped };
 }
 
 export interface MigrationIO {
@@ -120,10 +130,14 @@ export async function runMigration(
   log(`すでに新しい側にあるので書かないもの: ${plan.alreadyThere} 件`);
   log(`今回書くもの: ${count} 件`);
   for (const month of Object.keys(plan.perMonth).sort()) log(`  ${month}: ${plan.perMonth[month]} 件`);
+  if (plan.ownerMismatch.length > 0) {
+    log(`持ち主がちがうスタンプ: ${plan.ownerMismatch.length} 件（すでに新しい側にあり、uid か表示名が対応表とちがう。再実行では直りません）`);
+    for (const path of plan.ownerMismatch) log(`  - v2/rooms/${opts.to}/${path}`);
+  }
   for (const l of formatSkipped(plan.skipped)) log(l);
 
   if (opts.dryRun) {
-    log('お試し（--dry-run）なので、何も書いていません。');
+    log('お試しなので、何も書いていません。--write を付けると本当に書き込みます');
     return 0;
   }
   if (count === 0) {
@@ -135,6 +149,28 @@ export async function runMigration(
   log(`書きこみました（${count} 件）。書いた場所:`);
   for (const path of Object.keys(plan.writes)) log(`  v2/rooms/${opts.to}/${path}`);
   return 0;
+}
+
+/**
+ * 本当に書くかどうか。--write があり、--dry-run がなく、
+ * npm に --dry-run を渡していない（npm_config_dry_run が 'true' でない）ときだけ書く
+ */
+export function resolveDryRun(
+  flags: { write: boolean; dryRun: boolean },
+  env: Record<string, string | undefined>,
+): boolean {
+  return !flags.write || flags.dryRun || env.npm_config_dry_run === 'true';
+}
+
+/** CLI で捕まえなかったエラーを、短い日本語＋元のエラーの2行にする */
+export function describeError(e: unknown): string[] {
+  const code = e && typeof e === 'object' ? (e as { code?: unknown }).code : undefined;
+  const original = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+  const message =
+    code === 'EEXIST'
+      ? '同じ名前のバックアップがあります。1分待ってからもう一度'
+      : '途中で止まりました。データベースへの接続や鍵ファイル、入力を確かめてください';
+  return ['エラー: ' + message, `（くわしい内容: ${original}）`];
 }
 
 /** .secrets/user-map.json の中身を確かめる */

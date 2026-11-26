@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { initializeApp, cert, deleteApp, type App } from 'firebase-admin/app';
 import { getDatabase, type Database } from 'firebase-admin/database';
+import { describeError } from '../migrate';
 
 export const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 export const SECRETS = join(ROOT, '.secrets');
@@ -16,6 +17,20 @@ const DATABASE_URL = 'https://stamp-calendar-3e7e0-default-rtdb.asia-southeast1.
 export function die(message: string): never {
   console.error('エラー: ' + message);
   process.exit(1);
+}
+
+/**
+ * CLI の入口。捕まえなかったエラーは短い日本語＋元のエラー（調べる用）を出して、終了コード 1 で終わる。
+ * fn が数を返したら、それを終了コードにする
+ */
+export async function runCli(fn: () => Promise<number | void>): Promise<void> {
+  try {
+    const code = await fn();
+    process.exitCode = typeof code === 'number' ? code : 0;
+  } catch (e) {
+    for (const line of describeError(e)) console.error(line);
+    process.exitCode = 1;
+  }
 }
 
 export async function withDatabase<T>(fn: (db: Database) => Promise<T>): Promise<T> {
