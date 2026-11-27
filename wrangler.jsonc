@@ -17,7 +17,7 @@
   },
   "vars": {
     "FAMILY_DB_URL": "https://stamp-calendar-3e7e0-default-rtdb.asia-southeast1.firebasedatabase.app",
-    // 見本用プロジェクトを作ったら入れる
-    "DEMO_DB_URL": ""
+    // 見本用の別プロジェクト（stamp-calendar-demo）
+    "DEMO_DB_URL": "https://stamp-calendar-demo-default-rtdb.asia-southeast1.firebasedatabase.app"
   }
 }
