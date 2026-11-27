@@ -119,19 +119,23 @@ beforeEach(async () => {
   });
 });
 
-describe('旧データ rooms/（Task 15 までは今までどおり）', () => {
-  it('ログインしていなくても rooms/ABCDE/stamps に書ける', async () => {
-    await assertSucceeds(
+describe('旧データ rooms/（2026-11-27 切り替え後は誰も読み書きできない）', () => {
+  it('ログインしていなくても、していても rooms/ABCDE/stamps に書けない', async () => {
+    await assertFails(
       anonDb().ref('rooms/ABCDE/stamps/2026-12-01/x1').set({ emoji: '🏠', label: '在宅', user: 'ママ' }),
+    );
+    await assertFails(
+      db(ALICE).ref('rooms/ABCDE/stamps/2026-12-01/x1').set({ emoji: '🏠', label: '在宅', user: 'ママ' }),
     );
   });
 
-  it('ログインしていなくても rooms/ABCDE を読める', async () => {
-    await assertSucceeds(anonDb().ref('rooms/ABCDE').once('value'));
+  it('rooms/ABCDE は誰も読めない', async () => {
+    await assertFails(anonDb().ref('rooms/ABCDE').once('value'));
+    await assertFails(db(ALICE).ref('rooms/ABCDE').once('value'));
   });
 
-  it('ログインしていなくても rooms/ABCDE/stamps の中を読める', async () => {
-    await assertSucceeds(anonDb().ref('rooms/ABCDE/stamps/2026-12-01').once('value'));
+  it('rooms/ABCDE/stamps の中も読めない', async () => {
+    await assertFails(anonDb().ref('rooms/ABCDE/stamps/2026-12-01').once('value'));
   });
 
   it('rooms 全体（ルームの一覧）は読めない（本番と同じ、ルームごとの許可）', async () => {
