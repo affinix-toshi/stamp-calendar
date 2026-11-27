@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "stamp-calendar",
+  "compatibility_date": "2026-11-01",
+  "main": "src/worker/index.ts",
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/feed/*", "/api/*"]
+  },
+  // 秘密はここに書かない。`npx wrangler secret put <名前>` で登録する:
+  //   FAMILY_SA_JSON … 家族用サービスアカウント鍵の JSON
+  //   DEMO_SA_JSON   … 見本用サービスアカウント鍵の JSON
+  // 手元で動かすときは .dev.vars に入れる（.dev.vars.example を参照）
+  // 毎日 18:00 UTC = 日本時間 3:00 に見本ルームを最初の状態に戻す
+  "triggers": {
+    "crons": ["0 18 * * *"]
+  },
+  "vars": {
+    "FAMILY_DB_URL": "https://stamp-calendar-3e7e0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    // 見本用の別プロジェクト（stamp-calendar-demo）
+    "DEMO_DB_URL": "https://stamp-calendar-demo-default-rtdb.asia-southeast1.firebasedatabase.app"
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "rules": {
+    "rooms": {
+      ".read": false,
+      ".write": false
+    },
+    "v2": {
+      "config": {
+        ".read": false,
+        ".write": false
+      },
+      "health": {
+        ".read": false,
+        ".write": false
+      },
+      "users": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren()",
+          "rooms": {
+            ".validate": "newData.hasChildren()",
+            "$roomId": {
+              ".validate": "newData.val() === true"
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "rooms": {
+        "$roomId": {
+          ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+          "meta": {
+            ".write": "auth != null && newData.exists() && ((!data.exists() && auth.token.email_verified === true && root.child('v2/config/creators/' + auth.token.email.replace('.', ',')).val() === true && newData.child('createdBy').val() === auth.uid) || (data.exists() && root.child('v2/rooms/' + $roomId + '/members/' + auth.uid).exists()))",
+            ".validate": "newData.hasChildren(['name', 'createdBy', 'createdAt', 'inviteCode', 'feedToken'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40 && (!data.exists() || newData.val() === data.val())"
+            },
+            "createdBy": {
+              ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())"
+            },
+            "inviteCode": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9]{32}$/)"
+            },
+            "feedToken": {
+              ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9]{32}$/)"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "members": {
+            "$uid": {
+              ".write": "auth != null && $uid === auth.uid && newData.exists() && ((data.exists() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('invite').val() === data.child('invite').val()) || (!data.exists() && ((newData.parent().parent().child('meta/createdBy').val() === auth.uid && !newData.child('invite').exists()) || (newData.child('invite').isString() && newData.child('invite').val() === root.child('v2/rooms/' + $roomId + '/meta/inviteCode').val()))))",
+              ".validate": "newData.hasChildren(['name', 'joinedAt'])",
+              "name": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+              },
+              "joinedAt": {
+                ".validate": "newData.isNumber()"
+              },
+              "invite": {
+                ".validate": "newData.isString()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "stampTypes": {
+            ".write": "auth != null && (root.child('v2/rooms/' + $roomId + '/members/' + auth.uid).exists() || (!root.child('v2/rooms/' + $roomId + '/meta').exists() && newData.parent().child('meta/createdBy').val() === auth.uid))",
+            ".validate": "newData.hasChildren()",
+            "$typeId": {
+              ".validate": "newData.hasChildren(['emoji', 'label', 'order'])",
+              "emoji": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+              },
+              "label": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+              },
+              "order": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "stamps": {
+            "$date": {
+              ".validate": "$date.matches(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)",
+              "$stampId": {
+                ".write": "auth != null && root.child('v2/rooms/' + $roomId + '/members/' + auth.uid).exists() && ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid && (!newData.exists() || newData.child('uid').val() === auth.uid)))",
+                ".validate": "newData.hasChildren(['emoji', 'label', 'uid', 'userName', 'ts'])",
+                "emoji": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+                },
+                "label": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+                },
+                "uid": {
+                  ".validate": "newData.isString()"
+                },
+                "userName": {
+                  ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+                },
+                "ts": {
+                  ".validate": "newData.isNumber()"
+                },
+                "memo": {
+                  ".validate": "newData.isString() && newData.val().length <= 40"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            }
+          },
+          "repeats": {
+            "$repeatId": {
+              ".write": "auth != null && root.child('v2/rooms/' + $roomId + '/members/' + auth.uid).exists() && ((!data.exists() && newData.child('uid').val() === auth.uid) || (data.exists() && data.child('uid').val() === auth.uid && (!newData.exists() || newData.child('uid').val() === auth.uid)))",
+              ".validate": "newData.hasChildren(['emoji', 'label', 'uid', 'userName', 'ts', 'weekdays', 'start'])",
+              "emoji": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 16"
+              },
+              "label": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+              },
+              "uid": {
+                ".validate": "newData.isString()"
+              },
+              "userName": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+              },
+              "ts": {
+                ".validate": "newData.isNumber()"
+              },
+              "memo": {
+                ".validate": "newData.isString() && newData.val().length <= 40"
+              },
+              "weekdays": {
+                ".validate": "newData.hasChildren()",
+                "$i": {
+                  ".validate": "$i.matches(/^[0-6]$/) && newData.isNumber() && newData.val() >= 0 && newData.val() <= 6 && newData.val() % 1 === 0"
+                }
+              },
+              "start": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)"
+              },
+              "end": {
+                ".validate": "newData.isString() && newData.val().matches(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/)"
+              },
+              "skips": {
+                ".validate": "newData.hasChildren()",
+                "$date": {
+                  ".validate": "$date.matches(/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$/) && newData.val() === true"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

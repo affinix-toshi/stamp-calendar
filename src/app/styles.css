@@ -1,0 +1,1067 @@
+/*
+ * スタンプカレンダー v2
+ * 台所の壁にかける紙のカレンダーに、家族がスタンプを押していくイメージ。
+ * 主役は「月の数字」と「押されたスタンプ」。それ以外は静かにする。
+ */
+
+:root {
+  --paper: #f7f6fc;          /* 背景：少し青みのある白 */
+  --sheet: #ffffff;          /* カレンダーの紙 */
+  --ink: #26233f;            /* 文字 */
+  --ink-soft: #7c7896;       /* 補足の文字 */
+  --line: #e7e4f3;           /* 罫線 */
+  --stamp: #5b4ae0;          /* スタンプのインク（旧版の紫を引き継ぐ） */
+  --stamp-tint: #eeebff;     /* 自分のスタンプの下地 */
+  --sun: #e2464f;            /* 日曜 */
+  --sat: #2f6bdc;            /* 土曜 */
+  --danger: #e2464f;
+  --radius-l: 20px;
+  --radius-m: 14px;
+  --palette-h: 184px;        /* パレットの高さの目安（下に余白を空ける） */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
+    'Yu Gothic UI', Meiryo, sans-serif;
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+.weekday-pick:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--stamp) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---------- 共通の小物（ログイン・ルーム入口でも使う） ---------- */
+
+.toast {
+  margin: 12px 16px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(38, 35, 63, 0.92);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.loading {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* ---------- ルーム画面 ---------- */
+
+.room-screen {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0 8px calc(var(--palette-h) + var(--safe-bottom) + 16px);
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 0;
+}
+
+.room-settings-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--stamp);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.room-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- 月の切り替え ---------- */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0 10px;
+}
+
+.month-title {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0 4px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.month-year {
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-right: 6px;
+  align-self: flex-end;
+  padding-bottom: 6px;
+}
+
+/* この画面のいちばん目立つところ：月の数字 */
+.month-num {
+  font-size: 52px;
+  letter-spacing: -0.04em;
+  color: var(--stamp);
+  font-variant-numeric: tabular-nums;
+}
+
+.month-unit {
+  font-size: 20px;
+}
+
+.month-step {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: var(--sheet);
+  color: var(--stamp);
+  font-size: 26px;
+  line-height: 1;
+  box-shadow: 0 1px 0 var(--line), 0 0 0 1px var(--line) inset;
+}
+
+.month-prev {
+  margin-left: auto;
+}
+
+.month-step:active {
+  background: var(--stamp-tint);
+}
+
+.month-today {
+  min-height: 44px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--stamp);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ---------- カレンダー本体 ---------- */
+
+.calendar-sheet {
+  background: var(--sheet);
+  border-radius: var(--radius-l);
+  box-shadow: 0 0 0 1px var(--line), 0 6px 24px rgba(38, 35, 63, 0.05);
+  overflow: hidden;
+}
+
+.weekdays,
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.weekday {
+  padding: 8px 0 6px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.weekday.wd-0 {
+  color: var(--sun);
+}
+
+.weekday.wd-6 {
+  color: var(--sat);
+}
+
+.day-cell {
+  position: relative;
+  min-height: 76px;
+  padding: 4px 2px 6px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.day-cell:nth-child(7n + 1) {
+  border-left: none;
+}
+
+.day-cell.is-empty {
+  background: repeating-linear-gradient(-45deg, transparent 0 6px, #f6f5fb 6px 7px);
+}
+
+/* 日付全体をタップできるように、セルいっぱいの透明ボタンを敷く */
+.day-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.day-hit:active {
+  background: var(--stamp-tint);
+}
+
+.day-hit:focus-visible {
+  outline-offset: -3px;
+}
+
+.day-num {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto 2px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-cell.wd-0 .day-num {
+  color: var(--sun);
+}
+
+.day-cell.wd-6 .day-num {
+  color: var(--sat);
+}
+
+.day-cell.is-past .day-num {
+  opacity: 0.55;
+}
+
+.day-cell.is-today {
+  background: #faf9ff;
+}
+
+.day-cell.is-today .day-num {
+  background: var(--stamp);
+  color: #fff;
+  opacity: 1;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--stamp) 40%, transparent);
+}
+
+.day-stamps {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.stamp-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+  padding: 2px 1px 1px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+/* 1マスに2つずつ並べる（375px 幅で1つ約24px） */
+.day-stamps li {
+  display: flex;
+  justify-content: center;
+  flex: 0 0 calc(50% - 1px);
+  min-width: 0;
+}
+
+/* 1つだけの日は、名前がマスの幅いっぱいまで使える */
+.day-stamps li:only-child {
+  flex-basis: 100%;
+}
+
+.stamp-chip-emoji {
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.stamp-chip-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  font-size: 10px;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+  text-align: center;
+  color: var(--ink-soft);
+}
+
+/* 自分のスタンプ：インクの下地と色つきの名前 */
+.stamp-chip.is-mine {
+  background: var(--stamp-tint);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--stamp) 25%, transparent) inset;
+}
+
+.stamp-chip.is-mine .stamp-chip-name {
+  color: var(--stamp);
+  font-weight: 700;
+}
+
+.stamp-chip:active {
+  transform: scale(0.92);
+}
+
+/* メモがあるしるし */
+.stamp-chip-memo {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f2a93b;
+  box-shadow: 0 0 0 1.5px var(--sheet);
+}
+
+/* ---------- パレット（画面の下に固定） ---------- */
+
+.palette {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 20;
+  width: 100%;
+  max-width: 520px;
+  transform: translateX(-50%);
+  padding: 10px 12px calc(10px + var(--safe-bottom));
+  background: rgba(255, 255, 255, 0.94);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-radius: var(--radius-l) var(--radius-l) 0 0;
+  box-shadow: 0 -1px 0 var(--line), 0 -10px 30px rgba(38, 35, 63, 0.08);
+}
+
+.palette-hint {
+  margin: 0 0 8px;
+  min-height: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette-hint.is-active {
+  color: var(--stamp);
+  font-weight: 700;
+}
+
+.palette-tray {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 6px;
+  max-height: 146px;
+  padding: 8px 6px 2px; /* 選択中の ✓ が上・右にはみ出すので、その分の余白 */
+  margin: -8px -6px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.palette-stamp {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 60px;
+  padding: 6px 2px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-m);
+  background: var(--paper);
+  transition: transform 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.palette-stamp:active {
+  transform: scale(0.9);
+}
+
+.palette-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.palette-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+/* 選んだスタンプは「インクがついた」状態 */
+.palette-stamp.is-selected {
+  border-color: var(--stamp);
+  background: var(--stamp-tint);
+}
+
+.palette-stamp.is-selected .palette-label {
+  color: var(--stamp);
+  font-weight: 700;
+}
+
+.palette-stamp.is-selected::after {
+  content: '✓';
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--stamp);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.palette-add {
+  background: transparent;
+  border: 2px dashed var(--line);
+}
+
+.palette-add .palette-emoji {
+  font-size: 22px;
+  color: var(--ink-soft);
+}
+
+/* ---------- お知らせ（パレットの上に浮かべる） ---------- */
+
+.toast-layer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--palette-h) + var(--safe-bottom) + 8px);
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px;
+  pointer-events: none;
+  animation: toast-in 0.22s ease-out;
+}
+
+.toast-layer .toast {
+  margin: 0;
+  max-width: 420px;
+  box-shadow: 0 8px 24px rgba(38, 35, 63, 0.25);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- スタンプのシート（下から出る） ---------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(38, 35, 63, 0.38);
+  animation: fade-in 0.18s ease-out;
+}
+
+.sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 8px 20px calc(20px + var(--safe-bottom));
+  background: var(--sheet);
+  border-radius: 24px 24px 0 0;
+  animation: sheet-up 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.sheet-grip {
+  width: 40px;
+  height: 5px;
+  margin: 0 auto 12px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.sheet-emoji {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: var(--paper);
+  font-size: 34px;
+}
+
+.sheet-emoji.is-mine {
+  background: var(--stamp-tint);
+}
+
+.sheet-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-label {
+  margin: 4px 0 2px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.sheet-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.sheet-person {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sheet-repeat-note {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--stamp-tint);
+  color: var(--stamp);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sheet-close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: -4px -8px 0 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 26px;
+  color: var(--ink-soft);
+}
+
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sheet-memo {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-m);
+  background: var(--paper);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.sheet-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.sheet-question {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.sheet-actions > .btn {
+  flex: 1;
+}
+
+.sheet-actions.is-stacked {
+  flex-direction: column;
+}
+
+/* ---------- 入力欄とボタン ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.field-label {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.field-count {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.field-count.is-over,
+.field-error {
+  color: var(--danger);
+}
+
+.field-error {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--sheet);
+  font-size: 16px; /* 16px 未満だと iPhone で勝手に拡大される */
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--stamp);
+}
+
+.btn {
+  min-height: 48px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--radius-m);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--stamp);
+  color: #fff;
+}
+
+.btn-soft {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-danger-soft {
+  background: #fdecee;
+  color: var(--danger);
+}
+
+/* 曜日のチェック：丸いボタンに見せる */
+.weekday-picks {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px; /* 375px 幅のシート（中身 335px）で 1つ 44px を確保 */
+}
+
+.weekday-pick {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--paper);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.weekday-pick input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.weekday-pick.wd-0 {
+  color: var(--sun);
+}
+
+.weekday-pick.wd-6 {
+  color: var(--sat);
+}
+
+.weekday-pick:has(input:checked) {
+  background: var(--stamp);
+  color: #fff;
+}
+
+/* ---------- スタンプの編集・設定 ---------- */
+
+.editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editor-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px 6px 12px;
+  border-radius: var(--radius-m);
+  background: var(--paper);
+}
+
+.editor-row-emoji {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.editor-row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.editor-icon-btn,
+.editor-edit-btn {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: var(--sheet);
+  color: var(--stamp);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.editor-edit-btn {
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.editor-icon-btn:disabled {
+  opacity: 0.3;
+}
+
+.emoji-picks {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.emoji-pick {
+  min-height: 40px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--paper);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.emoji-pick.is-selected {
+  border-color: var(--stamp);
+  background: var(--stamp-tint);
+}
+
+.settings-body {
+  gap: 24px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.settings-note {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+
+.settings-steps {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.url-box {
+  font-size: 13px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* 小さい画面（iPhone SE など）ではマスを少し詰める */
+@media (max-width: 360px) {
+  .room-screen {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .stamp-chip-emoji {
+    font-size: 18px;
+  }
+
+  .month-num {
+    font-size: 44px;
+  }
+}
+
+/* ---------- 見本ルームの案内 ---------- */
+
+.demo-banner {
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  background: #e6f0ff;
+  color: #1d3f7a;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ---------- つながっていないときの案内 ---------- */
+
+.offline-banner {
+  margin: 8px 0 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  background: #fff4d6;
+  color: #6b4a00;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* ---------- シートの補足 ---------- */
+
+.sheet-busy {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--stamp);
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+/* ---------- その日の一覧（大きな行で選べる） ---------- */
+
+.day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: var(--radius-m);
+  background: var(--paper);
+  text-align: left;
+}
+
+.day-row.is-mine {
+  background: var(--stamp-tint);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--stamp) 25%, transparent) inset;
+}
+
+.day-row:active {
+  transform: scale(0.98);
+}
+
+.day-row-emoji {
+  flex: none;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.day-row-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.day-row-label {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.day-row-repeat {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--sheet);
+  color: var(--stamp);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: 2px;
+}
+
+.day-row-memo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.day-row-person {
+  flex: none;
+  max-width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.day-row.is-mine .day-row-person {
+  color: var(--stamp);
+}
+
+.day-row-arrow {
+  flex: none;
+  font-size: 22px;
+  color: var(--ink-soft);
+}

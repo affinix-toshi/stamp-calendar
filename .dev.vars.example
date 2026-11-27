@@ -1,0 +1,5 @@
+# 手元で Worker を動かすときの秘密（このファイルを .dev.vars にコピーして値を入れる）
+# .dev.vars は Git に入れない（.gitignore 済み）。本番は `npx wrangler secret put <名前>` で登録する
+# 値はサービスアカウント鍵の JSON を1行にしたもの（private_key の改行は \n のままでよい）
+FAMILY_SA_JSON=
+DEMO_SA_JSON=
