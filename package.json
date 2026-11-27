@@ -10,6 +10,8 @@
     "test:rules": "firebase emulators:exec --only database --project demo-stamp-calendar \"vitest run --project rules\"",
     "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
     "deploy": "vite build && wrangler deploy",
+    "rules:family": "firebase deploy --only database --project family --config firebase.json",
+    "rules:demo": "firebase deploy --only database --project demo --config firebase.demo.json",
     "test:data": "firebase emulators:exec --only auth,database --project demo-stamp-calendar \"vitest run --project data\"",
     "migrate:backup": "tsx scripts/migrate/cli/backup.ts",
     "migrate:report": "tsx scripts/migrate/cli/report.ts",
